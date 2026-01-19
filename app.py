@@ -2083,14 +2083,14 @@ elif st.session_state.current_page == 'cohort':
                             )
                         else:
                             st.info("⏳ Загрузите файл и дождитесь завершения расчётов для генерации отчётов")
+                    
+                    # Отображение матрицы (только если данные готовы)
+                    if info:
+                        st.markdown("---")
                         
-                        # Отображение матрицы (только если данные готовы)
-                        if info:
-                            st.markdown("---")
-                            
-                            # Добавляем CSS для компактного отображения таблицы без прокрутки
-                            st.markdown("""
-                    <style>
+                        # Добавляем CSS для компактного отображения таблицы без прокрутки
+                        st.markdown("""
+                        <style>
                     div[data-testid="stDataFrame"] > div {
                         overflow: visible !important;
                     }
@@ -2108,75 +2108,75 @@ elif st.session_state.current_page == 'cohort':
                     div[data-testid="stDataFrame"] table th,
                     div[data-testid="stDataFrame"] table td {
                         text-align: center !important;
-                    }
-                    </style>
-                            """, unsafe_allow_html=True)
-                            
-                            # Заголовок таблицы
-                            st.subheader("🔢 Динамика уникальных клиентов когорт")
-                            st.markdown("**Описание:** Диагональ показывает количество уникальных клиентов в каждом периоде. "
-                                      "Пересечения показывают количество клиентов, которые были активны в обоих периодах.")
-                                
-                            # Применяем цветовое форматирование
-                            # Преобразуем в int для отображения без десятичных знаков
-                            matrix_int = cohort_matrix.astype(int)
-                            styled_matrix = apply_matrix_color_gradient(matrix_int.astype(float), horizontal_dynamics=True, hide_before_diagonal=True)
-                            
-                            # Форматируем значения как целые числа
-                            styled_matrix = styled_matrix.format(precision=0, thousands=',', decimal='.')
-                            
-                            # Отображение матрицы с форматированием - без ограничений по размеру
-                            st.dataframe(
-                                styled_matrix,
-                                use_container_width=False
-                            )
-                            
-                            # Блок кодов клиентов для первой таблицы
-                            st.markdown("---")
-                            
-                            # Коды клиентов для первой таблицы
-                            with st.expander("👥 Коды клиентов: Динамика уникальных клиентов когорт", expanded=False):
-                        st.subheader("Выбор клиентов по когорте и периоду")
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
                         
-                        col_cohort1, col_period1 = st.columns(2)
-                        
-                        with col_cohort1:
-                            selected_cohort1 = st.selectbox(
-                                "Выберите когорту:",
-                                options=sorted_periods,
-                                index=0,
-                                help="Выберите период, когда клиенты впервые появились",
-                                key="cohort_select_1"
-                            )
-                        
-                        with col_period1:
-                            selected_period1 = st.selectbox(
-                                "Выберите период:",
-                                options=sorted_periods,
-                                index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
-                                help="Выберите период, для которого нужно показать клиентов",
-                                key="period_select_1"
-                            )
-                        
-                        if selected_cohort1 and selected_period1:
-                            period_clients_cache = st.session_state.get('period_clients_cache', None)
-                            common_clients = get_cohort_clients(df, year_month_col, client_col, selected_cohort1, selected_period1, period_clients_cache)
+                        # Заголовок таблицы
+                        st.subheader("🔢 Динамика уникальных клиентов когорт")
+                        st.markdown("**Описание:** Диагональ показывает количество уникальных клиентов в каждом периоде. "
+                                  "Пересечения показывают количество клиентов, которые были активны в обоих периодах.")
                             
-                            if common_clients:
-                                st.write(f"**Найдено клиентов: {len(common_clients)}**")
-                                
-                                # Возможность скачать список
-                                clients_csv = "\n".join([str(client) for client in common_clients])
-                                st.download_button(
-                                    label=f"💾 Скачать список клиентов ({len(common_clients)} шт.)",
-                                    data=clients_csv,
-                                    file_name=f"клиенты_когорта_{selected_cohort1}_период_{selected_period1}.txt",
-                                    mime="text/plain",
-                                    use_container_width=True,
-                                    key="download_clients_1"
+                        # Применяем цветовое форматирование
+                        # Преобразуем в int для отображения без десятичных знаков
+                        matrix_int = cohort_matrix.astype(int)
+                        styled_matrix = apply_matrix_color_gradient(matrix_int.astype(float), horizontal_dynamics=True, hide_before_diagonal=True)
+                        
+                        # Форматируем значения как целые числа
+                        styled_matrix = styled_matrix.format(precision=0, thousands=',', decimal='.')
+                        
+                        # Отображение матрицы с форматированием - без ограничений по размеру
+                        st.dataframe(
+                            styled_matrix,
+                            use_container_width=False
+                        )
+                        
+                        # Блок кодов клиентов для первой таблицы
+                        st.markdown("---")
+                        
+                        # Коды клиентов для первой таблицы
+                        with st.expander("👥 Коды клиентов: Динамика уникальных клиентов когорт", expanded=False):
+                            st.subheader("Выбор клиентов по когорте и периоду")
+                            
+                            col_cohort1, col_period1 = st.columns(2)
+                            
+                            with col_cohort1:
+                                selected_cohort1 = st.selectbox(
+                                    "Выберите когорту:",
+                                    options=sorted_periods,
+                                    index=0,
+                                    help="Выберите период, когда клиенты впервые появились",
+                                    key="cohort_select_1"
                                 )
-                            else:
-                                st.info(f"❌ Нет клиентов когорты {selected_cohort1} в периоде {selected_period1}")
+                            
+                            with col_period1:
+                                selected_period1 = st.selectbox(
+                                    "Выберите период:",
+                                    options=sorted_periods,
+                                    index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
+                                    help="Выберите период, для которого нужно показать клиентов",
+                                    key="period_select_1"
+                                )
+                            
+                            if selected_cohort1 and selected_period1:
+                                period_clients_cache = st.session_state.get('period_clients_cache', None)
+                                common_clients = get_cohort_clients(df, year_month_col, client_col, selected_cohort1, selected_period1, period_clients_cache)
+                                
+                                if common_clients:
+                                    st.write(f"**Найдено клиентов: {len(common_clients)}**")
+                                    
+                                    # Возможность скачать список
+                                    clients_csv = "\n".join([str(client) for client in common_clients])
+                                    st.download_button(
+                                        label=f"💾 Скачать список клиентов ({len(common_clients)} шт.)",
+                                        data=clients_csv,
+                                        file_name=f"клиенты_когорта_{selected_cohort1}_период_{selected_period1}.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_clients_1"
+                                    )
+                                else:
+                                    st.info(f"❌ Нет клиентов когорты {selected_cohort1} в периоде {selected_period1}")
                     
                     # Вторая таблица - Динамика накопления возврата
                     st.markdown("---")
