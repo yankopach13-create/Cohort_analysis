@@ -1087,6 +1087,9 @@ with col_template_image:
     
     # Пытаемся найти скриншот шаблона Qlik
     qlik_image_paths = [
+        'Qlik.png',
+        'Qlik.jpg',
+        'Qlik.jpeg',
         'qlik_template.png',
         'qlik_template.jpg',
         'qlik_template.jpeg',
@@ -1104,7 +1107,7 @@ with col_template_image:
             image_found = True
             break
     if not image_found:
-        st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: qlik_template.png, шаблон_qlik.png или qlik.png")
+        st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: Qlik.png, qlik_template.png, шаблон_qlik.png или qlik.png")
 
 st.markdown("---")
 
