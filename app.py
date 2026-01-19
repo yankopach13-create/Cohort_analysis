@@ -189,6 +189,11 @@ st.markdown("""
         border-color: #007aff !important;
     }
     
+    /* Фон для главного меню */
+    .main-menu-page {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
     /* Скрываем стандартные элементы Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -198,67 +203,89 @@ st.markdown("""
 
 # Функция для отображения главного меню
 def show_main_menu():
+    # Фон с градиентом
     st.markdown("""
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 40px 20px;">
-        <h1 style="font-size: 48px; font-weight: 600; color: #1d1d1f; margin-bottom: 60px; letter-spacing: -0.5px; text-align: center;">
+    <style>
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .main-menu-wrapper {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 60px 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85vh; padding: 40px 20px;">
+        <h1 style="font-size: 42px; font-weight: 700; color: #ffffff; margin-bottom: 80px; letter-spacing: -1px; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">
             Меню инструментов<br>клиентского анализа
         </h1>
-        <div style="display: flex; flex-direction: row; gap: 30px; width: 100%; max-width: 800px; justify-content: center; flex-wrap: wrap;">
+        <div style="display: flex; flex-direction: row; gap: 25px; width: 100%; max-width: 600px; justify-content: center; flex-wrap: wrap;">
     """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 1])
     
     with col1:
         st.markdown("""
-        <div style="background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%); 
-                    border: 1px solid #d2d2d7; 
-                    border-radius: 18px; 
-                    padding: 40px 30px; 
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border: 2px solid rgba(255, 255, 255, 0.3); 
+                    border-radius: 20px; 
+                    padding: 25px 20px; 
                     text-align: center; 
                     cursor: pointer; 
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-                    min-height: 200px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+                    backdrop-filter: blur(10px);
+                    min-height: 140px;
                     display: flex;
                     flex-direction: column;
-                    justify-content: center;">
-            <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
-            <div style="font-size: 24px; font-weight: 600; color: #1d1d1f; margin-bottom: 12px; letter-spacing: -0.3px;">
+                    justify-content: center;
+                    position: relative;
+                    overflow: hidden;">
+            <div style="position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;"></div>
+            <div style="font-size: 36px; margin-bottom: 12px; position: relative; z-index: 1;">📊</div>
+            <div style="font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 6px; letter-spacing: -0.2px; position: relative; z-index: 1;">
                 Когортный анализ
             </div>
-            <div style="font-size: 16px; color: #86868b; font-weight: 400;">
+            <div style="font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 400; position: relative; z-index: 1;">
                 Анализ клиентских когорт
             </div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Выбрать", use_container_width=True, key="btn_cohort"):
+        if st.button("📊", use_container_width=True, key="btn_cohort", help="Когортный анализ"):
             st.session_state.current_page = 'cohort'
             st.rerun()
     
     with col2:
         st.markdown("""
-        <div style="background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%); 
-                    border: 1px solid #d2d2d7; 
-                    border-radius: 18px; 
-                    padding: 40px 30px; 
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                    border: 2px solid rgba(255, 255, 255, 0.3); 
+                    border-radius: 20px; 
+                    padding: 25px 20px; 
                     text-align: center; 
                     cursor: pointer; 
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-                    min-height: 200px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+                    backdrop-filter: blur(10px);
+                    min-height: 140px;
                     display: flex;
                     flex-direction: column;
-                    justify-content: center;">
-            <div style="font-size: 48px; margin-bottom: 20px;">💼</div>
-            <div style="font-size: 24px; font-weight: 600; color: #1d1d1f; margin-bottom: 12px; letter-spacing: -0.3px;">
+                    justify-content: center;
+                    position: relative;
+                    overflow: hidden;">
+            <div style="position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;"></div>
+            <div style="font-size: 36px; margin-bottom: 12px; position: relative; z-index: 1;">💼</div>
+            <div style="font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 6px; letter-spacing: -0.2px; position: relative; z-index: 1;">
                 Вклад клиентов в период
             </div>
-            <div style="font-size: 16px; color: #86868b; font-weight: 400;">
+            <div style="font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 400; position: relative; z-index: 1;">
                 Анализ вклада клиентов
             </div>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Выбрать", use_container_width=True, key="btn_contribution"):
+        if st.button("💼", use_container_width=True, key="btn_contribution", help="Вклад клиентов в период"):
             st.session_state.current_page = 'contribution'
             st.rerun()
     
@@ -1284,63 +1311,63 @@ elif st.session_state.current_page == 'cohort':
     # Функция загрузки Excel файла
     st.header("📁 Загрузка данных")
 
-# Блок шаблона Qlik - верхняя часть с двумя колонками
-col_template_instructions, col_template_image = st.columns([1, 1])
+    # Блок шаблона Qlik - верхняя часть с двумя колонками
+    col_template_instructions, col_template_image = st.columns([1, 1])
 
-with col_template_instructions:
-    # Текст инструкций
-    st.markdown("""
-    1. Зайдите в Qlik, анализ чеков.
-    
-    2. Отберите необходимую категорию и уровни товара.
-    
-    3. Отберите анализируемый период.
-    
-    4. Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
-    
-    Настройте фильтрами построение динамики когорт: Год-Месяц или Год-Неделя.
-    
-    5. Скачайте документ в Qlik и загрузите в ячейку снизу.
-    """)
+    with col_template_instructions:
+        # Текст инструкций
+        st.markdown("""
+        1. Зайдите в Qlik, анализ чеков.
+        
+        2. Отберите необходимую категорию и уровни товара.
+        
+        3. Отберите анализируемый период.
+        
+        4. Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
+        
+        Настройте фильтрами построение динамики когорт: Год-Месяц или Год-Неделя.
+        
+        5. Скачайте документ в Qlik и загрузите в ячейку снизу.
+        """)
 
-with col_template_image:
-    # Заголовок над скриншотом
-    st.subheader("📋 Шаблон загрузки данных из Qlik")
-    
-    # Пытаемся найти скриншот шаблона Qlik
-    qlik_image_paths = [
-        'Qlik.png',
-        'Qlik.jpg',
-        'Qlik.jpeg',
-        'qlik_template.png',
-        'qlik_template.jpg',
-        'qlik_template.jpeg',
-        'шаблон_qlik.png',
-        'шаблон_qlik.jpg',
-        'шаблон_qlik.jpeg',
-        'qlik.png',
-        'qlik.jpg',
-        'qlik.jpeg'
-    ]
-    image_found = False
-    for img_path in qlik_image_paths:
-        if os.path.exists(img_path):
-            st.image(img_path, use_container_width=True)
-            image_found = True
-            break
-    if not image_found:
-        st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: Qlik.png, qlik_template.png, шаблон_qlik.png или qlik.png")
+    with col_template_image:
+        # Заголовок над скриншотом
+        st.subheader("📋 Шаблон загрузки данных из Qlik")
+        
+        # Пытаемся найти скриншот шаблона Qlik
+        qlik_image_paths = [
+            'Qlik.png',
+            'Qlik.jpg',
+            'Qlik.jpeg',
+            'qlik_template.png',
+            'qlik_template.jpg',
+            'qlik_template.jpeg',
+            'шаблон_qlik.png',
+            'шаблон_qlik.jpg',
+            'шаблон_qlik.jpeg',
+            'qlik.png',
+            'qlik.jpg',
+            'qlik.jpeg'
+        ]
+        image_found = False
+        for img_path in qlik_image_paths:
+            if os.path.exists(img_path):
+                st.image(img_path, use_container_width=True)
+                image_found = True
+                break
+        if not image_found:
+            st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: Qlik.png, qlik_template.png, шаблон_qlik.png или qlik.png")
 
-st.markdown("---")
+    st.markdown("---")
 
-# Блок загрузки данных - под блоком шаблона
-uploaded_file = st.file_uploader(
-    "Выберите Excel файл для загрузки",
-    type=['xlsx', 'xls'],
-    help="Поддерживаются файлы формата .xlsx и .xls"
-)
+    # Блок загрузки данных - под блоком шаблона
+    uploaded_file = st.file_uploader(
+        "Выберите Excel файл для загрузки",
+        type=['xlsx', 'xls'],
+        help="Поддерживаются файлы формата .xlsx и .xls"
+    )
 
-if uploaded_file is not None:
+    if uploaded_file is not None:
     try:
         # Загрузка Excel файла
         if uploaded_file.name.endswith('.xlsx'):
