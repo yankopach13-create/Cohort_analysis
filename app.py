@@ -1540,153 +1540,153 @@ elif st.session_state.current_page == 'cohort':
                         if info:
                             # Создаем функцию для генерации полного отчёта
                             def create_full_report_excel():
-                            """Создает полный Excel отчёт со всеми таблицами"""
-                            buffer = io.BytesIO()
+                                """Создает полный Excel отчёт со всеми таблицами"""
+                                buffer = io.BytesIO()
+                                
+                                # Получаем данные из session state
+                                cohort_matrix = st.session_state.cohort_matrix
+                                sorted_periods = st.session_state.sorted_periods
                             
-                            # Получаем данные из session state
-                            cohort_matrix = st.session_state.cohort_matrix
-                            sorted_periods = st.session_state.sorted_periods
-                        
-                            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                                workbook = writer.book
-                                
-                                # Получаем все матрицы
-                                accumulation_matrix = build_accumulation_matrix(df, year_month_col, client_col, sorted_periods)
-                                accumulation_percent_matrix = build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix)
-                                inflow_matrix = build_inflow_matrix(accumulation_percent_matrix)
-                                
-                                # Таблица 1: Динамика уникальных клиентов когорт
-                                cohort_matrix_copy = cohort_matrix.copy()
-                                cohort_matrix_copy.index.name = 'Когорта / Период'
-                                cohort_matrix_copy.to_excel(writer, sheet_name="1. Динамика уникальных клиентов", startrow=0, index=True)
-                                worksheet1 = writer.sheets["1. Динамика уникальных клиентов"]
-                                # Используем специальное форматирование с горизонтальной динамикой
-                                apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods)
-                                
-                                # Таблица 2: Динамика накопления возврата
-                                accumulation_matrix_copy = accumulation_matrix.copy()
-                                accumulation_matrix_copy.index.name = 'Когорта / Период'
-                                accumulation_matrix_copy.to_excel(writer, sheet_name="2. Динамика накопления", startrow=0, index=True)
-                                worksheet2 = writer.sheets["2. Динамика накопления"]
-                                # Применяем форматирование со скрытием нулевых значений
-                                apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True)
-                                # Форматируем значения как целые числа (только для непустых ячеек)
-                                for row_idx in range(2, len(accumulation_matrix.index) + 2):
-                                    for col_idx in range(2, len(accumulation_matrix.columns) + 2):
-                                        cell = worksheet2.cell(row=row_idx, column=col_idx)
-                                        if cell.value is not None and not isinstance(cell.value, str) and cell.value != "":
-                                            cell.number_format = '0'  # Формат целого числа
-                                
-                                # Таблица 3: Динамика накопления возврата в %
-                                accumulation_percent_matrix_copy = accumulation_percent_matrix.copy()
-                                accumulation_percent_matrix_copy.index.name = 'Когорта / Период'
-                                accumulation_percent_matrix_copy.to_excel(writer, sheet_name="3. Динамика накопления %", startrow=0, index=True)
-                                worksheet3 = writer.sheets["3. Динамика накопления %"]
-                                # Используем специальное форматирование для процентов
-                                apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods)
-                                
-                                # Таблица 4: Приток возврата в %
-                                inflow_matrix_copy = inflow_matrix.copy()
-                                inflow_matrix_copy.index.name = 'Когорта / Период'
-                                inflow_matrix_copy.to_excel(writer, sheet_name="4. Приток возврата %", startrow=0, index=True)
-                                worksheet4 = writer.sheets["4. Приток возврата %"]
-                                # Используем специальное форматирование для процентов притока
-                                apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods)
-                                
-                                # Таблица 5: Отток клиентов
-                                churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix)
-                                churn_table_copy = churn_table_full.copy()
-                                # Не конвертируем проценты в строки - сохраняем как числа для возможности расчетов
-                                churn_table_copy.to_excel(writer, sheet_name="5. Отток клиентов", startrow=0, index=False)
-                                worksheet5 = writer.sheets["5. Отток клиентов"]
-                                # Форматируем значения: числа как целые, проценты как проценты
-                                from openpyxl.styles import Alignment as ExcelAlignment
-                                for row_idx in range(2, len(churn_table_copy) + 2):
-                                    for col_idx in range(1, len(churn_table_copy.columns) + 1):
-                                        cell = worksheet5.cell(row=row_idx, column=col_idx)
-                                        cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
-                                        col_name = churn_table_copy.columns[col_idx - 1]
-                                        if col_name in ['Кол-во клиентов когорты', 'Накопительное кол-во возврата', 'Отток кол-во']:
-                                            # Колонки с числами
-                                            if cell.value is not None and not isinstance(cell.value, str):
+                                with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                                    workbook = writer.book
+                                    
+                                    # Получаем все матрицы
+                                    accumulation_matrix = build_accumulation_matrix(df, year_month_col, client_col, sorted_periods)
+                                    accumulation_percent_matrix = build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix)
+                                    inflow_matrix = build_inflow_matrix(accumulation_percent_matrix)
+                                    
+                                    # Таблица 1: Динамика уникальных клиентов когорт
+                                    cohort_matrix_copy = cohort_matrix.copy()
+                                    cohort_matrix_copy.index.name = 'Когорта / Период'
+                                    cohort_matrix_copy.to_excel(writer, sheet_name="1. Динамика уникальных клиентов", startrow=0, index=True)
+                                    worksheet1 = writer.sheets["1. Динамика уникальных клиентов"]
+                                    # Используем специальное форматирование с горизонтальной динамикой
+                                    apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods)
+                                    
+                                    # Таблица 2: Динамика накопления возврата
+                                    accumulation_matrix_copy = accumulation_matrix.copy()
+                                    accumulation_matrix_copy.index.name = 'Когорта / Период'
+                                    accumulation_matrix_copy.to_excel(writer, sheet_name="2. Динамика накопления", startrow=0, index=True)
+                                    worksheet2 = writer.sheets["2. Динамика накопления"]
+                                    # Применяем форматирование со скрытием нулевых значений
+                                    apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True)
+                                    # Форматируем значения как целые числа (только для непустых ячеек)
+                                    for row_idx in range(2, len(accumulation_matrix.index) + 2):
+                                        for col_idx in range(2, len(accumulation_matrix.columns) + 2):
+                                            cell = worksheet2.cell(row=row_idx, column=col_idx)
+                                            if cell.value is not None and not isinstance(cell.value, str) and cell.value != "":
                                                 cell.number_format = '0'  # Формат целого числа
-                                        elif col_name in ['Накопительный % возврата', 'Отток %']:
-                                            # Колонки с процентами - сохраняем как число (уже в процентах, конвертируем в долю)
-                                            if cell.value is not None and not isinstance(cell.value, str):
-                                                # Значение уже в процентах (например, 45.7), конвертируем в долю (0.457)
-                                                cell.value = float(cell.value) / 100.0
-                                                cell.number_format = '0.0%'  # Процентный формат Excel
-                                
-                                # Таблица 6: Присутствие клиентов оттока когорты в других категориях товаров (объединённая таблица)
-                                if ('category_summary_table' in st.session_state and st.session_state.category_summary_table is not None) or \
-                                   ('category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None):
                                     
-                                    start_row = 0
-                                    worksheet_combined = None
+                                    # Таблица 3: Динамика накопления возврата в %
+                                    accumulation_percent_matrix_copy = accumulation_percent_matrix.copy()
+                                    accumulation_percent_matrix_copy.index.name = 'Когорта / Период'
+                                    accumulation_percent_matrix_copy.to_excel(writer, sheet_name="3. Динамика накопления %", startrow=0, index=True)
+                                    worksheet3 = writer.sheets["3. Динамика накопления %"]
+                                    # Используем специальное форматирование для процентов
+                                    apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods)
                                     
-                                    # Добавляем верхнюю таблицу с итоговыми метриками
-                                    if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
-                                        summary_table_excel = st.session_state.category_summary_table.copy()
-                                        summary_table_excel.index.name = 'Метрика / Когорта'
-                                        summary_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
-                                        worksheet_combined = writer.sheets["6. Присутствие в других категориях"]
-                                        
-                                        # Форматируем верхнюю таблицу
-                                        for row_idx in range(start_row + 2, start_row + len(summary_table_excel.index) + 2):
-                                            for col_idx in range(2, len(summary_table_excel.columns) + 2):
-                                                cell = worksheet_combined.cell(row=row_idx, column=col_idx)
-                                                cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
-                                                row_name = summary_table_excel.index[row_idx - start_row - 2]
-                                                
-                                                if cell.value is not None and not isinstance(cell.value, str):
-                                                    if row_name == 'Доля оттока из сети от когорты':
-                                                        # Процентная колонка - конвертируем из процентов в долю
-                                                        cell.value = float(cell.value) / 100.0
-                                                        cell.number_format = '0.0%'
-                                                    else:
-                                                        # Числовые колонки
-                                                        cell.number_format = '0'  # Формат целого числа
-                                        
-                                        # Форматируем заголовок строки верхней таблицы
-                                        for row_idx in range(start_row + 2, start_row + len(summary_table_excel.index) + 2):
-                                            cell = worksheet_combined.cell(row=row_idx, column=1)
-                                            cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
-                                        
-                                        # Обновляем начальную строку для следующей таблицы (верхняя таблица + 2 пустые строки)
-                                        start_row = start_row + len(summary_table_excel.index) + 3
+                                    # Таблица 4: Приток возврата в %
+                                    inflow_matrix_copy = inflow_matrix.copy()
+                                    inflow_matrix_copy.index.name = 'Когорта / Период'
+                                    inflow_matrix_copy.to_excel(writer, sheet_name="4. Приток возврата %", startrow=0, index=True)
+                                    worksheet4 = writer.sheets["4. Приток возврата %"]
+                                    # Используем специальное форматирование для процентов притока
+                                    apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods)
                                     
-                                    # Добавляем таблицу с разрезом по категориям
-                                    if 'category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None:
-                                        category_table_excel = st.session_state.category_cohort_table.copy()
-                                        category_table_excel.index.name = 'Категория / Когорта'
-                                        
-                                        if worksheet_combined is None:
-                                            # Если верхней таблицы не было, создаём новый лист
-                                            category_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
-                                            worksheet_combined = writer.sheets["6. Присутствие в других категориях"]
-                                        else:
-                                            # Записываем вторую таблицу на тот же лист
-                                            category_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
-                                        
-                                        # Форматируем таблицу с категориями
-                                        for row_idx in range(start_row + 2, start_row + len(category_table_excel.index) + 2):
-                                            for col_idx in range(2, len(category_table_excel.columns) + 2):
-                                                cell = worksheet_combined.cell(row=row_idx, column=col_idx)
-                                                cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
+                                    # Таблица 5: Отток клиентов
+                                    churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix)
+                                    churn_table_copy = churn_table_full.copy()
+                                    # Не конвертируем проценты в строки - сохраняем как числа для возможности расчетов
+                                    churn_table_copy.to_excel(writer, sheet_name="5. Отток клиентов", startrow=0, index=False)
+                                    worksheet5 = writer.sheets["5. Отток клиентов"]
+                                    # Форматируем значения: числа как целые, проценты как проценты
+                                    from openpyxl.styles import Alignment as ExcelAlignment
+                                    for row_idx in range(2, len(churn_table_copy) + 2):
+                                        for col_idx in range(1, len(churn_table_copy.columns) + 1):
+                                            cell = worksheet5.cell(row=row_idx, column=col_idx)
+                                            cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
+                                            col_name = churn_table_copy.columns[col_idx - 1]
+                                            if col_name in ['Кол-во клиентов когорты', 'Накопительное кол-во возврата', 'Отток кол-во']:
+                                                # Колонки с числами
                                                 if cell.value is not None and not isinstance(cell.value, str):
                                                     cell.number_format = '0'  # Формат целого числа
+                                            elif col_name in ['Накопительный % возврата', 'Отток %']:
+                                                # Колонки с процентами - сохраняем как число (уже в процентах, конвертируем в долю)
+                                                if cell.value is not None and not isinstance(cell.value, str):
+                                                    # Значение уже в процентах (например, 45.7), конвертируем в долю (0.457)
+                                                    cell.value = float(cell.value) / 100.0
+                                                    cell.number_format = '0.0%'  # Процентный формат Excel
+                                    
+                                    # Таблица 6: Присутствие клиентов оттока когорты в других категориях товаров (объединённая таблица)
+                                    if ('category_summary_table' in st.session_state and st.session_state.category_summary_table is not None) or \
+                                       ('category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None):
                                         
-                                        # Форматируем заголовок строки таблицы с категориями
-                                        for row_idx in range(start_row + 2, start_row + len(category_table_excel.index) + 2):
-                                            cell = worksheet_combined.cell(row=row_idx, column=1)
-                                            cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
+                                        start_row = 0
+                                        worksheet_combined = None
+                                        
+                                        # Добавляем верхнюю таблицу с итоговыми метриками
+                                        if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
+                                            summary_table_excel = st.session_state.category_summary_table.copy()
+                                            summary_table_excel.index.name = 'Метрика / Когорта'
+                                            summary_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
+                                            worksheet_combined = writer.sheets["6. Присутствие в других категориях"]
+                                            
+                                            # Форматируем верхнюю таблицу
+                                            for row_idx in range(start_row + 2, start_row + len(summary_table_excel.index) + 2):
+                                                for col_idx in range(2, len(summary_table_excel.columns) + 2):
+                                                    cell = worksheet_combined.cell(row=row_idx, column=col_idx)
+                                                    cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
+                                                    row_name = summary_table_excel.index[row_idx - start_row - 2]
+                                                    
+                                                    if cell.value is not None and not isinstance(cell.value, str):
+                                                        if row_name == 'Доля оттока из сети от когорты':
+                                                            # Процентная колонка - конвертируем из процентов в долю
+                                                            cell.value = float(cell.value) / 100.0
+                                                            cell.number_format = '0.0%'
+                                                        else:
+                                                            # Числовые колонки
+                                                            cell.number_format = '0'  # Формат целого числа
+                                            
+                                            # Форматируем заголовок строки верхней таблицы
+                                            for row_idx in range(start_row + 2, start_row + len(summary_table_excel.index) + 2):
+                                                cell = worksheet_combined.cell(row=row_idx, column=1)
+                                                cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
+                                            
+                                            # Обновляем начальную строку для следующей таблицы (верхняя таблица + 2 пустые строки)
+                                            start_row = start_row + len(summary_table_excel.index) + 3
+                                        
+                                        # Добавляем таблицу с разрезом по категориям
+                                        if 'category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None:
+                                            category_table_excel = st.session_state.category_cohort_table.copy()
+                                            category_table_excel.index.name = 'Категория / Когорта'
+                                            
+                                            if worksheet_combined is None:
+                                                # Если верхней таблицы не было, создаём новый лист
+                                                category_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
+                                                worksheet_combined = writer.sheets["6. Присутствие в других категориях"]
+                                            else:
+                                                # Записываем вторую таблицу на тот же лист
+                                                category_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
+                                            
+                                            # Форматируем таблицу с категориями
+                                            for row_idx in range(start_row + 2, start_row + len(category_table_excel.index) + 2):
+                                                for col_idx in range(2, len(category_table_excel.columns) + 2):
+                                                    cell = worksheet_combined.cell(row=row_idx, column=col_idx)
+                                                    cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
+                                                    if cell.value is not None and not isinstance(cell.value, str):
+                                                        cell.number_format = '0'  # Формат целого числа
+                                            
+                                            # Форматируем заголовок строки таблицы с категориями
+                                            for row_idx in range(start_row + 2, start_row + len(category_table_excel.index) + 2):
+                                                cell = worksheet_combined.cell(row=row_idx, column=1)
+                                                cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
+                                    
+                                    # Удаляем пустой лист по умолчанию
+                                    if 'Sheet' in workbook.sheetnames:
+                                        workbook.remove(workbook['Sheet'])
                                 
-                                # Удаляем пустой лист по умолчанию
-                                if 'Sheet' in workbook.sheetnames:
-                                    workbook.remove(workbook['Sheet'])
-                            
-                            buffer.seek(0)
-                            return buffer.getvalue()
+                                buffer.seek(0)
+                                return buffer.getvalue()
                         
                         # CSS для увеличения размера кнопок загрузки
                         st.markdown("""
