@@ -2077,8 +2077,20 @@ if uploaded_file is not None:
                             churn_display['Накопительный % возврата'] = churn_display['Накопительный % возврата'].apply(lambda x: f"{x:.1f}%")
                             churn_display['Отток %'] = churn_display['Отток %'].apply(lambda x: f"{x:.1f}%")
                             
-                            # Используем churn_display как display_matrix для единообразия
-                            display_matrix = churn_display
+                            # Убеждаемся, что когорта - первый столбец
+                            column_order = ['Когорта', 'Кол-во клиентов когорты', 'Накопительное кол-во возврата', 
+                                          'Накопительный % возврата', 'Отток кол-во', 'Отток %']
+                            churn_display = churn_display[column_order]
+                            
+                            # Применяем стили для центрирования значений во всех столбцах
+                            def center_format(val):
+                                return 'text-align: center'
+                            
+                            # Создаем стилизованную таблицу с центрированием
+                            styled_churn = churn_display.style.applymap(center_format)
+                            
+                            # Используем styled_churn как display_matrix для единообразия
+                            display_matrix = styled_churn
                             description_text = "Показывает клиентов, которые не вернулись в категорию ни разу после периода когорты."
                             view_key = "churn"
                         else:
@@ -2097,10 +2109,29 @@ if uploaded_file is not None:
                     with col_table:
                         # Отображение таблицы (широкая) с поддержкой полноэкранного режима
                         if display_matrix is not None:
-                            st.dataframe(
-                                display_matrix,
-                                use_container_width=True
-                            )
+                            # Для таблицы оттока скрываем индекс
+                            if view_key == "churn":
+                                st.dataframe(
+                                    display_matrix,
+                                    use_container_width=True,
+                                    hide_index=True
+                                )
+                                # Добавляем CSS для центрирования значений в таблице оттока
+                                st.markdown("""
+                                <style>
+                                div[data-testid="stDataFrame"] table td {
+                                    text-align: center !important;
+                                }
+                                div[data-testid="stDataFrame"] table th {
+                                    text-align: center !important;
+                                }
+                                </style>
+                                """, unsafe_allow_html=True)
+                            else:
+                                st.dataframe(
+                                    display_matrix,
+                                    use_container_width=True
+                                )
                         else:
                             st.info("Выберите тип отображения для просмотра данных.")
                     
