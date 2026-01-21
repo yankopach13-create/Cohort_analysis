@@ -1985,7 +1985,8 @@ if uploaded_file is not None:
                                 "Динамика уникальных клиентов когорт",
                                 "Динамика накопления возврата",
                                 "Динамика накопления возврата в %",
-                                "Приток возврата в %"
+                                "Приток возврата в %",
+                                "Отток клиентов из категории"
                             ],
                             horizontal=True,
                             key="view_type_selector"
@@ -2065,6 +2066,20 @@ if uploaded_file is not None:
                         display_matrix = display_matrix.format(format_dict_inflow)
                         description_text = "Показывает прирост уникальных клиентов когорты между периодами. Диагональ = 0%, первый период после диагонали = процент возврата, остальные = разница между накопительными процентами соседних периодов."
                         view_key = "inflow"
+                    
+                    elif view_type == "Отток клиентов из категории":
+                        # Используем сохраненную таблицу оттока
+                        churn_table = st.session_state.churn_table
+                        
+                        # Форматируем таблицу для отображения
+                        churn_display = churn_table.copy()
+                        churn_display['Накопительный % возврата'] = churn_display['Накопительный % возврата'].apply(lambda x: f"{x:.1f}%")
+                        churn_display['Отток %'] = churn_display['Отток %'].apply(lambda x: f"{x:.1f}%")
+                        
+                        # Используем churn_display как display_matrix для единообразия
+                        display_matrix = churn_display
+                        description_text = "Показывает клиентов, которые не вернулись в категорию ни разу после периода когорты."
+                        view_key = "churn"
                     
                     # Отображение описания с красивым оформлением
                     st.markdown(f'<div class="description-block">{description_text}</div>', unsafe_allow_html=True)
@@ -2220,6 +2235,34 @@ if uploaded_file is not None:
                                         mime="text/plain",
                                         use_container_width=True,
                                         key="download_clients_unified_4"
+                                    )
+                                else:
+                                    st.info(f"❌ Нет данных")
+                        
+                        elif view_key == "churn":
+                            # Для оттока только выбор когорты, без периода
+                            selected_cohort = st.selectbox(
+                                "Когорта:",
+                                options=sorted_periods,
+                                index=0,
+                                help="Выберите когорту для скачивания списка клиентов оттока из категории",
+                                key="cohort_select_unified_5"
+                            )
+                            
+                            if selected_cohort:
+                                period_clients_cache = st.session_state.get('period_clients_cache', None)
+                                churn_clients = get_churn_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, period_clients_cache)
+                                
+                                if churn_clients:
+                                    st.write(f"**Найдено: {len(churn_clients)}**")
+                                    clients_csv = "\n".join([str(client) for client in churn_clients])
+                                    st.download_button(
+                                        label=f"💾 Скачать ({len(churn_clients)})",
+                                        data=clients_csv,
+                                        file_name=f"отток_клиентов_когорта_{selected_cohort}.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_clients_unified_5"
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
