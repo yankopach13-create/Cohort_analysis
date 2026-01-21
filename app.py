@@ -1886,12 +1886,13 @@ if uploaded_file is not None:
                         display: flex;
                         flex-direction: row;
                         gap: 10px;
+                        align-items: stretch;
                     }
                     
                     .stRadio > div > label {
                         background: linear-gradient(135deg, #e0d5f5 0%, #d4c5f0 100%) !important;
                         color: #5a4fcf !important;
-                        padding: 12px 20px !important;
+                        padding: 15px 20px !important;
                         border-radius: 8px !important;
                         margin: 0 !important;
                         font-weight: 700 !important;
@@ -1903,6 +1904,13 @@ if uploaded_file is not None:
                         text-align: center !important;
                         flex: 1 1 0 !important;
                         min-width: 0 !important;
+                        min-height: 50px !important;
+                        height: 50px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
                     }
                     
                     .stRadio > div > label:hover {
