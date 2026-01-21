@@ -1863,368 +1863,267 @@ if uploaded_file is not None:
                     </style>
                     """, unsafe_allow_html=True)
                     
-                    # Заголовок таблицы
-                    st.subheader("🔢 Динамика уникальных клиентов когорт")
-                    st.markdown("**Описание:** Диагональ показывает количество уникальных клиентов в каждом периоде. "
-                              "Пересечения показывают количество клиентов, которые были активны в обоих периодах.")
-                        
-                    # Применяем цветовое форматирование
-                    # Преобразуем в int для отображения без десятичных знаков
-                    matrix_int = cohort_matrix.astype(int)
-                    styled_matrix = apply_matrix_color_gradient(matrix_int.astype(float), horizontal_dynamics=True, hide_before_diagonal=True)
-                    
-                    # Форматируем значения как целые числа
-                    styled_matrix = styled_matrix.format(precision=0, thousands=',', decimal='.')
-                    
-                    # Отображение матрицы с форматированием - без ограничений по размеру
-                    st.dataframe(
-                        styled_matrix,
-                        use_container_width=False
+                    # Объединенный блок с переключателем отображения
+                    # Переключатель для выбора типа отображения
+                    view_type = st.radio(
+                        "Выберите тип отображения:",
+                        options=[
+                            "Динамика уникальных клиентов когорт",
+                            "Динамика накопления возврата",
+                            "Динамика накопления возврата в %",
+                            "Приток возврата в %"
+                        ],
+                        horizontal=True,
+                        key="view_type_selector"
                     )
                     
-                    # Блок кодов клиентов для первой таблицы
                     st.markdown("---")
                     
-                    # Коды клиентов для первой таблицы
-                    with st.expander("👥 Коды клиентов: Динамика уникальных клиентов когорт", expanded=False):
-                        st.subheader("Выбор клиентов по когорте и периоду")
+                    # Инициализируем переменные для таблицы и описания
+                    display_matrix = None
+                    description_text = ""
+                    view_key = ""
+                    
+                    # Подготовка данных в зависимости от выбранного типа
+                    if view_type == "Динамика уникальных клиентов когорт":
+                        # Применяем цветовое форматирование
+                        matrix_int = cohort_matrix.astype(int)
+                        display_matrix = apply_matrix_color_gradient(matrix_int.astype(float), horizontal_dynamics=True, hide_before_diagonal=True)
+                        display_matrix = display_matrix.format(precision=0, thousands=',', decimal='.')
+                        description_text = "**Описание:** Диагональ показывает количество уникальных клиентов в каждом периоде. Пересечения показывают количество клиентов, которые были активны в обоих периодах."
+                        view_key = "cohort"
                         
-                        col_cohort1, col_period1 = st.columns(2)
+                    elif view_type == "Динамика накопления возврата":
+                        accumulation_matrix = st.session_state.accumulation_matrix
+                        matrix_int_accum = accumulation_matrix.astype(int)
+                        display_matrix = apply_matrix_color_gradient(matrix_int_accum.astype(float), hide_zeros=True)
+                        display_matrix = display_matrix.format(precision=0, thousands=',', decimal='.')
+                        description_text = "**Описание:** Показывает накопление уникальных клиентов когорты по периодам. Каждая ячейка содержит количество уникальных клиентов когорты, которые вернулись в любой период от начала когорты до текущего включительно."
+                        view_key = "accumulation"
                         
-                        with col_cohort1:
-                            selected_cohort1 = st.selectbox(
-                                "Выберите когорту:",
-                                options=sorted_periods,
-                                index=0,
-                                help="Выберите период, когда клиенты впервые появились",
-                                key="cohort_select_1"
-                            )
+                    elif view_type == "Динамика накопления возврата в %":
+                        accumulation_percent_matrix = st.session_state.accumulation_percent_matrix
+                        display_matrix = apply_matrix_color_gradient(accumulation_percent_matrix, hide_zeros=True, horizontal_dynamics=True, hide_before_diagonal=True)
                         
-                        with col_period1:
-                            selected_period1 = st.selectbox(
-                                "Выберите период:",
-                                options=sorted_periods,
-                                index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
-                                help="Выберите период, для которого нужно показать клиентов",
-                                key="period_select_1"
-                            )
-                        
-                        if selected_cohort1 and selected_period1:
-                            period_clients_cache = st.session_state.get('period_clients_cache', None)
-                            common_clients = get_cohort_clients(df, year_month_col, client_col, selected_cohort1, selected_period1, period_clients_cache)
-                            
-                            if common_clients:
-                                st.write(f"**Найдено клиентов: {len(common_clients)}**")
-                                
-                                # Возможность скачать список
-                                clients_csv = "\n".join([str(client) for client in common_clients])
-                                st.download_button(
-                                    label=f"💾 Скачать список клиентов ({len(common_clients)} шт.)",
-                                    data=clients_csv,
-                                    file_name=f"клиенты_когорта_{selected_cohort1}_период_{selected_period1}.txt",
-                                    mime="text/plain",
-                                    use_container_width=True,
-                                    key="download_clients_1"
-                                )
-                            else:
-                                st.info(f"❌ Нет клиентов когорты {selected_cohort1} в периоде {selected_period1}")
-                    
-                    # Вторая таблица - Динамика накопления возврата
-                    st.markdown("---")
-                    
-                    st.subheader("📈 Динамика накопления возврата")
-                    st.markdown("**Описание:** Показывает накопление уникальных клиентов когорты по периодам. "
-                              "Каждая ячейка содержит количество уникальных клиентов когорты, которые вернулись "
-                              "в любой период от начала когорты до текущего включительно.")
-                    
-                    # Используем сохраненную матрицу накопления
-                    accumulation_matrix = st.session_state.accumulation_matrix
-                    
-                    # Применяем цветовое форматирование к матрице накопления (скрываем нули)
-                    matrix_int_accum = accumulation_matrix.astype(int)
-                    styled_matrix_accum = apply_matrix_color_gradient(matrix_int_accum.astype(float), hide_zeros=True)
-                    styled_matrix_accum = styled_matrix_accum.format(precision=0, thousands=',', decimal='.')
-                    
-                    # Отображение матрицы накопления
-                    st.dataframe(
-                        styled_matrix_accum,
-                        use_container_width=False
-                    )
-                    
-                    # Блок кодов клиентов для второй таблицы
-                    st.markdown("---")
-                    
-                    # Коды клиентов для второй таблицы
-                    with st.expander("👥 Коды клиентов: Динамика накопления возврата", expanded=False):
-                        st.subheader("Выбор накопленных клиентов по когорте и периоду")
-                        
-                        col_cohort2, col_period2 = st.columns(2)
-                        
-                        with col_cohort2:
-                            selected_cohort2 = st.selectbox(
-                                "Выберите когорту:",
-                                options=sorted_periods,
-                                index=0,
-                                help="Выберите период когорты",
-                                key="cohort_select_2"
-                            )
-                        
-                        with col_period2:
-                            selected_period2 = st.selectbox(
-                                "Выберите период:",
-                                options=sorted_periods,
-                                index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
-                                help="Выберите период, до которого показывать накопленных клиентов",
-                                key="period_select_2"
-                            )
-                        
-                        if selected_cohort2 and selected_period2:
-                            period_clients_cache = st.session_state.get('period_clients_cache', None)
-                            accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort2, selected_period2, period_clients_cache)
-                            
-                            if accumulation_clients:
-                                st.write(f"**Найдено накопленных клиентов: {len(accumulation_clients)}**")
-                                
-                                # Возможность скачать список
-                                clients_csv = "\n".join([str(client) for client in accumulation_clients])
-                                st.download_button(
-                                    label=f"💾 Скачать список клиентов ({len(accumulation_clients)} шт.)",
-                                    data=clients_csv,
-                                    file_name=f"накопленные_клиенты_когорта_{selected_cohort2}_период_{selected_period2}.txt",
-                                    mime="text/plain",
-                                    use_container_width=True,
-                                    key="download_clients_2"
-                                )
-                            else:
-                                st.info(f"❌ Нет накопленных клиентов когорты {selected_cohort2} до периода {selected_period2}")
-                    
-                    # Третья таблица - Динамика накопления возврата в %
-                    st.markdown("---")
-                    
-                    st.subheader("📈 Динамика накопления возврата в %")
-                    st.markdown("**Описание:** Показывает долю накопления уникальных клиентов когорты от общего количества клиентов в когорте. "
-                              "Значения выражены в процентах.")
-                    
-                    # Используем сохраненную матрицу накопления в процентах
-                    accumulation_percent_matrix = st.session_state.accumulation_percent_matrix
-                
-                    # Применяем цветовое форматирование к матрице накопления в %
-                    # Используем исходные числовые значения для расчета градиента
-                    styled_matrix_percent = apply_matrix_color_gradient(accumulation_percent_matrix, hide_zeros=True, horizontal_dynamics=True, hide_before_diagonal=True)
-                    
-                    # Форматируем значения с символом % через format, чтобы не нарушать вычисления стилей
-                    period_indices_percent = {period: idx for idx, period in enumerate(accumulation_percent_matrix.index)}
-                    
-                    # Создаем функцию форматирования для каждой ячейки
-                    def format_percent_value(val):
-                        """Форматирует одно значение в проценты с символом %"""
-                        # Если значение пустое или нуль, возвращаем пустую строку
-                        if pd.isna(val) or val == 0 or val == '':
-                            return ''
-                        
-                        try:
-                            # Форматируем число как процент
-                            return f"{float(val):.1f}%"
-                        except (ValueError, TypeError):
-                            return ''
-                    
-                    # Создаем функцию-форматтер для применения к DataFrame
-                    # Для каждой ячейки определяем, нужно ли ее скрывать или форматировать
-                    def create_percent_formatter():
-                        """Создает форматтер для процентов"""
-                        def format_cell(val, row_name, col_name):
-                            """Форматирует одну ячейку"""
-                            row_idx = period_indices_percent.get(row_name, 0)
-                            col_idx = period_indices_percent.get(col_name, 0)
-                            is_diagonal = (row_name == col_name)
-                            
-                            # Скрываем значения до диагонали или нули
-                            if (not is_diagonal and col_idx < row_idx) or (not is_diagonal and (pd.isna(val) or val == 0 or val == '')):
+                        # Форматирование процентов
+                        def format_percent_cell(val):
+                            if pd.isna(val) or val == '':
                                 return ''
-                            elif is_diagonal:
-                                # Диагональ - 100.0%
-                                return '100.0%'
-                            else:
-                                return format_percent_value(val)
-                        return format_cell
-                    
-                    # Применяем форматирование значений с символом %
-                    # Используем lambda функцию для доступа к индексам строк и столбцов
-                    def format_percent_cell(val):
-                        """Форматирует значение в проценты с символом %"""
-                        # Если значение пустое или нуль, возвращаем пустую строку
-                        if pd.isna(val) or val == '':
-                            return ''
-                        
-                        try:
-                            val_float = float(val)
-                            if val_float == 0:
+                            try:
+                                val_float = float(val)
+                                if val_float == 0:
+                                    return ''
+                                return f"{val_float:.1f}%"
+                            except (ValueError, TypeError):
+                                if isinstance(val, str) and '%' in val:
+                                    return val
                                 return ''
-                            # Форматируем число как процент
-                            return f"{val_float:.1f}%"
-                        except (ValueError, TypeError):
-                            # Если значение уже строка (например, после предыдущего форматирования), возвращаем как есть
-                            if isinstance(val, str) and '%' in val:
-                                return val
-                            return ''
+                        
+                        display_matrix = display_matrix.format(formatter=format_percent_cell)
+                        description_text = "**Описание:** Показывает долю накопления уникальных клиентов когорты от общего количества клиентов в когорте. Значения выражены в процентах."
+                        view_key = "accumulation_percent"
+                        
+                    elif view_type == "Приток возврата в %":
+                        inflow_matrix = st.session_state.inflow_matrix
+                        display_matrix = apply_matrix_color_gradient(inflow_matrix, hide_zeros=True, horizontal_dynamics=True, hide_before_diagonal=True)
+                        
+                        # Форматирование процентов для притока
+                        def format_inflow_percent_cell(val):
+                            if pd.isna(val) or val == '':
+                                return ''
+                            try:
+                                val_float = float(val)
+                                if val_float == 0:
+                                    return ''
+                                return f"{val_float:.1f}%"
+                            except (ValueError, TypeError):
+                                if isinstance(val, str) and '%' in val:
+                                    return val
+                                return ''
+                        
+                        # Добавляем 0.0% на диагонали
+                        for row_name in display_matrix.data.index:
+                            if row_name in display_matrix.data.columns:
+                                display_matrix.data.loc[row_name, row_name] = '0.0%'
+                        
+                        format_dict_inflow = {col: format_inflow_percent_cell for col in display_matrix.data.columns}
+                        display_matrix = display_matrix.format(format_dict_inflow)
+                        description_text = "**Описание:** Показывает прирост уникальных клиентов когорты между периодами. Диагональ = 0%, первый период после диагонали = процент возврата, остальные = разница между накопительными процентами соседних периодов."
+                        view_key = "inflow"
                     
-                    # Применяем форматирование значений с символом %
-                    styled_matrix_percent = styled_matrix_percent.format(formatter=format_percent_cell)
+                    # Отображение описания
+                    st.markdown(description_text)
                     
-                    # Отображение матрицы накопления в процентах
+                    # Отображение таблицы
                     st.dataframe(
-                        styled_matrix_percent,
+                        display_matrix,
                         use_container_width=False
                     )
                     
-                    # Блок кодов клиентов для третьей таблицы
+                    # Блок кодов клиентов под таблицей
                     st.markdown("---")
                     
-                    # Коды клиентов для третьей таблицы (используем те же данные, что и для второй)
-                    with st.expander("👥 Коды клиентов: Динамика накопления возврата в %", expanded=False):
-                        st.subheader("Выбор накопленных клиентов по когорте и периоду")
-                        
-                        col_cohort3, col_period3 = st.columns(2)
-                        
-                        with col_cohort3:
-                            selected_cohort3 = st.selectbox(
-                                "Выберите когорту:",
-                                options=sorted_periods,
-                                index=0,
-                                help="Выберите период когорты",
-                                key="cohort_select_3"
-                            )
-                        
-                        with col_period3:
-                            selected_period3 = st.selectbox(
-                                "Выберите период:",
-                                options=sorted_periods,
-                                index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
-                                help="Выберите период, до которого показывать накопленных клиентов",
-                                key="period_select_3"
-                            )
-                        
-                        if selected_cohort3 and selected_period3:
-                            period_clients_cache = st.session_state.get('period_clients_cache', None)
-                            accumulation_clients3 = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort3, selected_period3, period_clients_cache)
+                    # Коды клиентов в зависимости от выбранного типа
+                    with st.expander(f"👥 Коды клиентов: {view_type}", expanded=False):
+                        if view_key == "cohort":
+                            st.subheader("Выбор клиентов по когорте и периоду")
+                            col_cohort, col_period = st.columns(2)
                             
-                            if accumulation_clients3:
-                                st.write(f"**Найдено накопленных клиентов: {len(accumulation_clients3)}**")
-                                
-                                # Возможность скачать список
-                                clients_csv = "\n".join([str(client) for client in accumulation_clients3])
-                                st.download_button(
-                                    label=f"💾 Скачать список клиентов ({len(accumulation_clients3)} шт.)",
-                                    data=clients_csv,
-                                    file_name=f"накопленные_клиенты_проценты_когорта_{selected_cohort3}_период_{selected_period3}.txt",
-                                    mime="text/plain",
-                                    use_container_width=True,
-                                    key="download_clients_3"
+                            with col_cohort:
+                                selected_cohort = st.selectbox(
+                                    "Выберите когорту:",
+                                    options=sorted_periods,
+                                    index=0,
+                                    help="Выберите период, когда клиенты впервые появились",
+                                    key="cohort_select_unified_1"
                                 )
-                            else:
-                                st.info(f"❌ Нет накопленных клиентов когорты {selected_cohort3} до периода {selected_period3}")
-                    
-                    # Четвертая таблица - Приток возврата в %
-                    st.markdown("---")
-                    
-                    st.subheader("➕ Приток возврата в %")
-                    st.markdown("**Описание:** Показывает прирост уникальных клиентов когорты между периодами. "
-                              "Диагональ = 0%, первый период после диагонали = процент возврата, "
-                              "остальные = разница между накопительными процентами соседних периодов.")
-                    
-                    # Используем сохраненную матрицу притока
-                    inflow_matrix = st.session_state.inflow_matrix
-                    
-                    # Применяем цветовое форматирование к матрице притока
-                    # Скрываем нули только для недиагональных значений, но показываем 0.0% на диагонали
-                    styled_matrix_inflow = apply_matrix_color_gradient(inflow_matrix, hide_zeros=True, horizontal_dynamics=True, hide_before_diagonal=True)
-                    
-                    # Форматируем значения с символом % через format
-                    period_indices_inflow = {period: idx for idx, period in enumerate(inflow_matrix.index)}
-                    
-                    def format_inflow_percent_cell(val):
-                        """Форматирует значение в проценты с символом %"""
-                        # Если значение пустое, возвращаем пустую строку
-                        if pd.isna(val) or val == '':
-                            return ''
-                        
-                        try:
-                            val_float = float(val)
-                            # Для нулевых значений после диагонали возвращаем пустую строку (скрываем)
-                            # Но для диагонали это обрабатывается отдельно - там всегда 0.0%
-                            if val_float == 0:
-                                return ''  # Скрываем нули, кроме диагонали (которая обрабатывается в color_gradient)
-                            # Форматируем число как процент
-                            return f"{val_float:.1f}%"
-                        except (ValueError, TypeError):
-                            # Если значение уже строка (например, после предыдущего форматирования), возвращаем как есть
-                            if isinstance(val, str) and '%' in val:
-                                return val
-                            return ''
-                
-                    # Нужно вручную добавить 0.0% на диагонали после форматирования
-                    # Так как hide_zeros=True скрывает нули, но на диагонали должно быть 0.0%
-                    for row_name in styled_matrix_inflow.data.index:
-                        if row_name in styled_matrix_inflow.data.columns:
-                            # Устанавливаем 0.0% на диагонали
-                            styled_matrix_inflow.data.loc[row_name, row_name] = '0.0%'
-                    
-                    # Применяем форматирование значений с символом %
-                    format_dict_inflow = {col: format_inflow_percent_cell for col in styled_matrix_inflow.data.columns}
-                    styled_matrix_inflow = styled_matrix_inflow.format(format_dict_inflow)
-                    
-                    # Отображение матрицы притока в процентах
-                    st.dataframe(
-                        styled_matrix_inflow,
-                        use_container_width=False
-                    )
-                    
-                    # Блок кодов клиентов для четвертой таблицы
-                    st.markdown("---")
-                    
-                    # Коды клиентов для четвертой таблицы (приток - новые возвраты)
-                    with st.expander("👥 Коды клиентов: Приток возврата в %", expanded=False):
-                        st.subheader("Выбор клиентов притока по когорте и периоду")
-                        
-                        col_cohort4, col_period4 = st.columns(2)
-                        
-                        with col_cohort4:
-                            selected_cohort4 = st.selectbox(
-                                "Выберите когорту:",
-                                options=sorted_periods,
-                                index=0,
-                                help="Выберите период когорты",
-                                key="cohort_select_4"
-                            )
-                        
-                        with col_period4:
-                            selected_period4 = st.selectbox(
-                                "Выберите период:",
-                                options=sorted_periods,
-                                index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
-                                help="Выберите период, для которого показать новых вернувшихся клиентов",
-                                key="period_select_4"
-                            )
-                        
-                        if selected_cohort4 and selected_period4:
-                            period_clients_cache = st.session_state.get('period_clients_cache', None)
-                            inflow_clients = get_inflow_clients(df, year_month_col, client_col, sorted_periods, selected_cohort4, selected_period4, period_clients_cache)
                             
-                            if inflow_clients:
-                                st.write(f"**Найдено новых вернувшихся клиентов: {len(inflow_clients)}**")
-                                
-                                # Возможность скачать список
-                                clients_csv = "\n".join([str(client) for client in inflow_clients])
-                                st.download_button(
-                                    label=f"💾 Скачать список клиентов ({len(inflow_clients)} шт.)",
-                                    data=clients_csv,
-                                    file_name=f"приток_клиентов_когорта_{selected_cohort4}_период_{selected_period4}.txt",
-                                    mime="text/plain",
-                                    use_container_width=True,
-                                    key="download_clients_4"
+                            with col_period:
+                                selected_period = st.selectbox(
+                                    "Выберите период:",
+                                    options=sorted_periods,
+                                    index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
+                                    help="Выберите период, для которого нужно показать клиентов",
+                                    key="period_select_unified_1"
                                 )
-                            else:
-                                st.info(f"❌ Нет новых вернувшихся клиентов когорты {selected_cohort4} в периоде {selected_period4}")
+                            
+                            if selected_cohort and selected_period:
+                                period_clients_cache = st.session_state.get('period_clients_cache', None)
+                                common_clients = get_cohort_clients(df, year_month_col, client_col, selected_cohort, selected_period, period_clients_cache)
+                                
+                                if common_clients:
+                                    st.write(f"**Найдено клиентов: {len(common_clients)}**")
+                                    clients_csv = "\n".join([str(client) for client in common_clients])
+                                    st.download_button(
+                                        label=f"💾 Скачать список клиентов ({len(common_clients)} шт.)",
+                                        data=clients_csv,
+                                        file_name=f"клиенты_когорта_{selected_cohort}_период_{selected_period}.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_clients_unified_1"
+                                    )
+                                else:
+                                    st.info(f"❌ Нет клиентов когорты {selected_cohort} в периоде {selected_period}")
+                        
+                        elif view_key == "accumulation":
+                            st.subheader("Выбор накопленных клиентов по когорте и периоду")
+                            col_cohort, col_period = st.columns(2)
+                            
+                            with col_cohort:
+                                selected_cohort = st.selectbox(
+                                    "Выберите когорту:",
+                                    options=sorted_periods,
+                                    index=0,
+                                    help="Выберите период когорты",
+                                    key="cohort_select_unified_2"
+                                )
+                            
+                            with col_period:
+                                selected_period = st.selectbox(
+                                    "Выберите период:",
+                                    options=sorted_periods,
+                                    index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
+                                    help="Выберите период, до которого показывать накопленных клиентов",
+                                    key="period_select_unified_2"
+                                )
+                            
+                            if selected_cohort and selected_period:
+                                period_clients_cache = st.session_state.get('period_clients_cache', None)
+                                accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache)
+                                
+                                if accumulation_clients:
+                                    st.write(f"**Найдено накопленных клиентов: {len(accumulation_clients)}**")
+                                    clients_csv = "\n".join([str(client) for client in accumulation_clients])
+                                    st.download_button(
+                                        label=f"💾 Скачать список клиентов ({len(accumulation_clients)} шт.)",
+                                        data=clients_csv,
+                                        file_name=f"накопленные_клиенты_когорта_{selected_cohort}_период_{selected_period}.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_clients_unified_2"
+                                    )
+                                else:
+                                    st.info(f"❌ Нет накопленных клиентов когорты {selected_cohort} до периода {selected_period}")
+                        
+                        elif view_key == "accumulation_percent":
+                            st.subheader("Выбор накопленных клиентов по когорте и периоду")
+                            col_cohort, col_period = st.columns(2)
+                            
+                            with col_cohort:
+                                selected_cohort = st.selectbox(
+                                    "Выберите когорту:",
+                                    options=sorted_periods,
+                                    index=0,
+                                    help="Выберите период когорты",
+                                    key="cohort_select_unified_3"
+                                )
+                            
+                            with col_period:
+                                selected_period = st.selectbox(
+                                    "Выберите период:",
+                                    options=sorted_periods,
+                                    index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
+                                    help="Выберите период, до которого показывать накопленных клиентов",
+                                    key="period_select_unified_3"
+                                )
+                            
+                            if selected_cohort and selected_period:
+                                period_clients_cache = st.session_state.get('period_clients_cache', None)
+                                accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache)
+                                
+                                if accumulation_clients:
+                                    st.write(f"**Найдено накопленных клиентов: {len(accumulation_clients)}**")
+                                    clients_csv = "\n".join([str(client) for client in accumulation_clients])
+                                    st.download_button(
+                                        label=f"💾 Скачать список клиентов ({len(accumulation_clients)} шт.)",
+                                        data=clients_csv,
+                                        file_name=f"накопленные_клиенты_проценты_когорта_{selected_cohort}_период_{selected_period}.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_clients_unified_3"
+                                    )
+                                else:
+                                    st.info(f"❌ Нет накопленных клиентов когорты {selected_cohort} до периода {selected_period}")
+                        
+                        elif view_key == "inflow":
+                            st.subheader("Выбор клиентов притока по когорте и периоду")
+                            col_cohort, col_period = st.columns(2)
+                            
+                            with col_cohort:
+                                selected_cohort = st.selectbox(
+                                    "Выберите когорту:",
+                                    options=sorted_periods,
+                                    index=0,
+                                    help="Выберите период когорты",
+                                    key="cohort_select_unified_4"
+                                )
+                            
+                            with col_period:
+                                selected_period = st.selectbox(
+                                    "Выберите период:",
+                                    options=sorted_periods,
+                                    index=min(1, len(sorted_periods) - 1) if len(sorted_periods) > 1 else 0,
+                                    help="Выберите период, для которого показать новых вернувшихся клиентов",
+                                    key="period_select_unified_4"
+                                )
+                            
+                            if selected_cohort and selected_period:
+                                period_clients_cache = st.session_state.get('period_clients_cache', None)
+                                inflow_clients = get_inflow_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache)
+                                
+                                if inflow_clients:
+                                    st.write(f"**Найдено новых вернувшихся клиентов: {len(inflow_clients)}**")
+                                    clients_csv = "\n".join([str(client) for client in inflow_clients])
+                                    st.download_button(
+                                        label=f"💾 Скачать список клиентов ({len(inflow_clients)} шт.)",
+                                        data=clients_csv,
+                                        file_name=f"приток_клиентов_когорта_{selected_cohort}_период_{selected_period}.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_clients_unified_4"
+                                    )
+                                else:
+                                    st.info(f"❌ Нет новых вернувшихся клиентов когорты {selected_cohort} в периоде {selected_period}")
                     
                     # Пятый блок - Отток клиентов из категории
                     st.markdown("---")
