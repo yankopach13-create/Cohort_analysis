@@ -1896,11 +1896,12 @@ if uploaded_file is not None:
                     .stRadio > div > label {
                         background: linear-gradient(135deg, #e0d5f5 0%, #d4c5f0 100%) !important;
                         color: #5a4fcf !important;
-                        padding: 15px 20px !important;
+                        padding: 12px 8px !important;
                         border-radius: 8px !important;
                         margin: 0 !important;
                         font-weight: 700 !important;
-                        font-size: 0.85rem !important;
+                        font-size: 0.75rem !important;
+                        line-height: 1.2 !important;
                         transition: all 0.3s ease !important;
                         border: 2px solid rgba(90, 79, 207, 0.3) !important;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
@@ -1909,12 +1910,14 @@ if uploaded_file is not None:
                         flex: 1 1 0 !important;
                         min-width: 0 !important;
                         min-height: 50px !important;
-                        height: 50px !important;
+                        height: auto !important;
+                        max-height: 60px !important;
                         display: flex !important;
                         align-items: center !important;
                         justify-content: center !important;
                         white-space: normal !important;
                         word-wrap: break-word !important;
+                        overflow: hidden !important;
                     }
                     
                     .stRadio > div > label:hover {
@@ -1967,14 +1970,24 @@ if uploaded_file is not None:
                         max-width: 100%;
                     }
                     
-                    /* Ограничиваем ширину контейнера кнопок */
+                    /* Ограничиваем ширину контейнера кнопок и растягиваем на всю ширину */
                     div[data-testid="stRadio"] {
-                        max-width: 100%;
+                        max-width: 100% !important;
+                        width: 100% !important;
+                    }
+                    
+                    /* Растягиваем контейнер с кнопками на всю ширину колонки */
+                    .stRadio > div {
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        gap: 10px !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
                     
                     # Создаем колонки для выравнивания кнопок с блоком описания
+                    # Кнопки занимают всю ширину до блока кодов клиентов (соотношение 4:1 как у таблицы)
                     col_buttons_container, col_empty = st.columns([4, 1])
                     
                     with col_buttons_container:
