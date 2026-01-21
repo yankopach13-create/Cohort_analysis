@@ -1983,53 +1983,12 @@ if uploaded_file is not None:
                         flex-direction: row !important;
                         gap: 10px !important;
                     }
-                    
-                    /* Стили для кнопок Excel и PDF - идентичный размер с кнопками переключения */
-                    div[data-testid="stDownloadButton"] button,
-                    div[data-testid="stButton"] button {
-                        background: linear-gradient(135deg, #e0d5f5 0%, #d4c5f0 100%) !important;
-                        color: #5a4fcf !important;
-                        padding: 12px 8px !important;
-                        border-radius: 8px !important;
-                        margin: 0 !important;
-                        font-weight: 700 !important;
-                        font-size: 0.75rem !important;
-                        line-height: 1.2 !important;
-                        transition: all 0.3s ease !important;
-                        border: 2px solid rgba(90, 79, 207, 0.3) !important;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-                        cursor: pointer !important;
-                        text-align: center !important;
-                        min-height: 50px !important;
-                        height: auto !important;
-                        max-height: 60px !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        white-space: normal !important;
-                        word-wrap: break-word !important;
-                        overflow: hidden !important;
-                        width: 100% !important;
-                    }
-                    
-                    div[data-testid="stDownloadButton"] button:hover,
-                    div[data-testid="stButton"] button:hover {
-                        transform: translateY(-2px) !important;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-                        background: linear-gradient(135deg, #d4c5f0 0%, #c8b5eb 100%) !important;
-                    }
-                    
-                    div[data-testid="stDownloadButton"] button:active,
-                    div[data-testid="stButton"] button:active {
-                        transform: translateY(0) !important;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
                     # Создаем колонки для выравнивания кнопок с блоком описания
                     # Кнопки занимают всю ширину до блока кодов клиентов (соотношение 4:1 как у таблицы)
-                    col_buttons_container, col_excel_pdf = st.columns([4, 1])
+                    col_buttons_container, col_empty = st.columns([4, 1])
                     
                     with col_buttons_container:
                         # Переключатель для выбора типа отображения (горизонтально, на уровне с таблицей)
@@ -2045,99 +2004,6 @@ if uploaded_file is not None:
                             horizontal=True,
                             key="view_type_selector"
                         )
-                    
-                    with col_excel_pdf:
-                        # Кнопки скачивания Excel и PDF справа от кнопок переключения
-                        if st.session_state.get('cohort_info') is not None:
-                            info = st.session_state.get('cohort_info', {})
-                            
-                            # Кнопка Excel
-                            if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
-                                excel_data_full = st.session_state.excel_report_data
-                                first_period = info.get('first_period', 'unknown')
-                                last_period = info.get('last_period', 'unknown')
-                                
-                                st.download_button(
-                                    label="📥 Excel",
-                                    data=excel_data_full,
-                                    file_name=f"полный_отчёт_когортный_анализ_{first_period}_{last_period}.xlsx",
-                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                    use_container_width=True,
-                                    key="download_excel_top_buttons"
-                                )
-                            
-                            # Кнопка PDF
-                            if st.button("📊 PDF", key="generate_pdf_top_buttons", use_container_width=True):
-                                st.session_state.should_generate_pdf_top_buttons = True
-                                st.rerun()
-                            
-                            if st.session_state.get('should_generate_pdf_top_buttons', False):
-                                try:
-                                    # Генерируем PDF используя ту же логику, что и в основном блоке
-                                    import io
-                                    from reportlab.lib.pagesizes import A4
-                                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-                                    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-                                    from reportlab.lib import colors
-                                    from reportlab.lib.units import inch
-                                    from reportlab.lib.enums import TA_CENTER
-                                    
-                                    buffer = io.BytesIO()
-                                    font_name = 'Helvetica'
-                                    font_name_bold = 'Helvetica-Bold'
-                                    
-                                    try:
-                                        if platform.system() == 'Windows':
-                                            windows_fonts = [r'C:\Windows\Fonts\arial.ttf', r'C:\Windows\Fonts\calibri.ttf']
-                                            for font_path in windows_fonts:
-                                                if os.path.exists(font_path):
-                                                    try:
-                                                        font_name = 'CyrillicFont'
-                                                        font_name_bold = 'CyrillicFont-Bold'
-                                                        pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                                        pdfmetrics.registerFont(TTFont(font_name_bold, font_path))
-                                                        break
-                                                    except:
-                                                        continue
-                                    except:
-                                        pass
-                                    
-                                    cohort_matrix = st.session_state.cohort_matrix
-                                    sorted_periods = st.session_state.sorted_periods
-                                    accumulation_matrix = st.session_state.accumulation_matrix
-                                    accumulation_percent_matrix = st.session_state.accumulation_percent_matrix
-                                    inflow_matrix = st.session_state.inflow_matrix
-                                    churn_table = st.session_state.churn_table
-                                    
-                                    doc = SimpleDocTemplate(buffer, pagesize=A4)
-                                    story = []
-                                    styles = getSampleStyleSheet()
-                                    
-                                    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontName=font_name_bold, fontSize=24, textColor=colors.HexColor('#1f77b4'), spaceAfter=30, alignment=TA_CENTER)
-                                    normal_style = ParagraphStyle('CustomNormal', parent=styles['Normal'], fontName=font_name, fontSize=10)
-                                    
-                                    story.append(Paragraph("КОГОРТНЫЙ АНАЛИЗ", title_style))
-                                    story.append(Spacer(1, 0.3*inch))
-                                    story.append(Paragraph(f"Период анализа: {info['first_period']} - {info['last_period']}", normal_style))
-                                    
-                                    doc.build(story)
-                                    buffer.seek(0)
-                                    pdf_data = buffer.getvalue()
-                                    
-                                    first_period = info.get('first_period', 'unknown')
-                                    last_period = info.get('last_period', 'unknown')
-                                    
-                                    st.download_button(
-                                        label="📊 PDF",
-                                        data=pdf_data,
-                                        file_name=f"анализ_когортный_{first_period}_{last_period}.pdf",
-                                        mime="application/pdf",
-                                        use_container_width=True,
-                                        key="download_pdf_top_buttons"
-                                    )
-                                    st.session_state.should_generate_pdf_top_buttons = False
-                                except Exception as e:
-                                    st.error(f"Ошибка генерации PDF: {str(e)}")
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     
@@ -2229,8 +2095,15 @@ if uploaded_file is not None:
                                           'Накопительный % возврата', 'Отток кол-во', 'Отток %']
                             churn_display = churn_display[column_order]
                             
-                            # Используем churn_display как display_matrix (без стилизации через pandas, так как st.dataframe не поддерживает это полностью)
-                            display_matrix = churn_display
+                            # Применяем стили для центрирования значений во всех столбцах
+                            def center_format(val):
+                                return 'text-align: center'
+                            
+                            # Создаем стилизованную таблицу с центрированием
+                            styled_churn = churn_display.style.applymap(center_format)
+                            
+                            # Используем styled_churn как display_matrix для единообразия
+                            display_matrix = styled_churn
                             description_text = "Показывает клиентов, которые не вернулись в категорию ни разу после периода когорты."
                             view_key = "churn"
                         else:
@@ -2249,53 +2122,24 @@ if uploaded_file is not None:
                     with col_table:
                         # Отображение таблицы (широкая) с поддержкой полноэкранного режима
                         if display_matrix is not None:
-                            # Для таблицы оттока скрываем индекс и центрируем все значения
+                            # Для таблицы оттока скрываем индекс
                             if view_key == "churn":
-                                # Добавляем CSS для центрирования значений в таблице оттока ПЕРЕД отображением
+                                st.dataframe(
+                                    display_matrix,
+                                    use_container_width=True,
+                                    hide_index=True
+                                )
+                                # Добавляем CSS для центрирования значений в таблице оттока
                                 st.markdown("""
                                 <style>
-                                /* Центрирование для таблицы оттока - применяем ко всем ячейкам через уникальный key */
-                                div[data-testid="stDataFrame"][data-baseweb="data-table"] table,
-                                div[data-testid="stDataFrame"] table {
-                                    width: 100% !important;
+                                div[data-testid="stDataFrame"] table td {
+                                    text-align: center !important;
                                 }
-                                /* Центрируем все ячейки таблицы */
-                                div[data-testid="stDataFrame"] table td,
                                 div[data-testid="stDataFrame"] table th {
-                                    text-align: center !important;
-                                    vertical-align: middle !important;
-                                }
-                                /* Убеждаемся, что все значения в tbody центрированы */
-                                div[data-testid="stDataFrame"] table tbody td {
-                                    text-align: center !important;
-                                }
-                                /* Убеждаемся, что все заголовки центрированы */
-                                div[data-testid="stDataFrame"] table thead th {
-                                    text-align: center !important;
-                                }
-                                /* Центрирование для всех элементов внутри ячеек (включая span, div и т.д.) */
-                                div[data-testid="stDataFrame"] table td span,
-                                div[data-testid="stDataFrame"] table td div,
-                                div[data-testid="stDataFrame"] table th span,
-                                div[data-testid="stDataFrame"] table th div {
-                                    text-align: center !important;
-                                    display: block !important;
-                                    width: 100% !important;
-                                }
-                                /* Центрирование для числовых значений */
-                                div[data-testid="stDataFrame"] table td[data-testid="stDataFrameCell"],
-                                div[data-testid="stDataFrame"] table th[data-testid="stDataFrameHeaderCell"] {
                                     text-align: center !important;
                                 }
                                 </style>
                                 """, unsafe_allow_html=True)
-                                
-                                st.dataframe(
-                                    display_matrix,
-                                    use_container_width=True,
-                                    hide_index=True,
-                                    key="churn_dataframe_display"
-                                )
                             else:
                                 st.dataframe(
                                     display_matrix,
