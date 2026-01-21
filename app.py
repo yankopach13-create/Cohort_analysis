@@ -1954,11 +1954,30 @@ if uploaded_file is not None:
                     # Отображение описания
                     st.markdown(description_text)
                     
-                    # Отображение таблицы
-                    st.dataframe(
-                        display_matrix,
-                        use_container_width=False
-                    )
+                    # CSS стили для центрирования таблицы
+                    st.markdown("""
+                    <style>
+                    /* Центрирование контейнера таблицы */
+                    div[data-testid="stDataFrame"] {
+                        margin-left: auto !important;
+                        margin-right: auto !important;
+                        width: fit-content !important;
+                    }
+                    /* Центрирование родительского контейнера */
+                    .element-container:has(div[data-testid="stDataFrame"]) {
+                        display: flex !important;
+                        justify-content: center !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+                    
+                    # Отображение таблицы в центрированном контейнере
+                    col_left, col_center, col_right = st.columns([1, 2, 1])
+                    with col_center:
+                        st.dataframe(
+                            display_matrix,
+                            use_container_width=False
+                        )
                     
                     # Блок кодов клиентов под таблицей
                     st.markdown("---")
