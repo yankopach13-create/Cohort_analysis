@@ -1060,9 +1060,16 @@ def build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix):
     return matrix_percent
 
 # Функция загрузки Excel файла
-st.header("📁 Загрузка данных")
+# Создаем колонки для выравнивания заголовков на одном уровне
+col_header_left, col_header_right = st.columns([1, 1])
 
-# Блок шаблона Qlik - верхняя часть с двумя колонками
+with col_header_left:
+    st.header("📁 Загрузка данных")
+
+with col_header_right:
+    st.subheader("📋 Шаблон загрузки данных из Qlik")
+
+# Блок шаблона Qlik - инструкции слева, изображение и загрузчик справа
 col_template_instructions, col_template_image = st.columns([1, 1])
 
 with col_template_instructions:
@@ -1082,9 +1089,6 @@ with col_template_instructions:
     """)
 
 with col_template_image:
-    # Заголовок над скриншотом
-    st.subheader("📋 Шаблон загрузки данных из Qlik")
-    
     # Пытаемся найти скриншот шаблона Qlik
     qlik_image_paths = [
         'Qlik.png',
@@ -1108,15 +1112,13 @@ with col_template_image:
             break
     if not image_found:
         st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: Qlik.png, qlik_template.png, шаблон_qlik.png или qlik.png")
-
-st.markdown("---")
-
-# Блок загрузки данных - под блоком шаблона
-uploaded_file = st.file_uploader(
-    "Выберите Excel файл для загрузки",
-    type=['xlsx', 'xls'],
-    help="Поддерживаются файлы формата .xlsx и .xls"
-)
+    
+    # Загрузчик Excel файла прямо под картинкой (занимает половину ширины)
+    uploaded_file = st.file_uploader(
+        "Выберите Excel файл для загрузки",
+        type=['xlsx', 'xls'],
+        help="Поддерживаются файлы формата .xlsx и .xls"
+    )
 
 if uploaded_file is not None:
     try:
