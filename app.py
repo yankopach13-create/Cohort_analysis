@@ -32,7 +32,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📊 Когортный анализ")
+st.title("Когортный анализ, возвращаемость и отток")
 st.markdown("---")
 
 # Глобальные CSS стили для всех таблиц (выравнивание по центру)
@@ -1147,7 +1147,8 @@ if uploaded_file is not None:
             st.session_state.client_col = None
         
         # Построение когортной матрицы
-        st.markdown("---")
+        # Уменьшаем отступ перед блоком матриц
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         
         # Определяем столбцы автоматически
         expected_columns = {
@@ -1838,7 +1839,8 @@ if uploaded_file is not None:
                 
                 # Отображение матрицы (только если данные готовы)
                 if info:
-                    st.markdown("---")
+                    # Уменьшаем отступ перед блоком матриц
+                    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
                     
                     # Добавляем CSS для компактного отображения таблицы без прокрутки
                     st.markdown("""
@@ -1984,12 +1986,51 @@ if uploaded_file is not None:
                         flex-direction: row !important;
                         gap: 10px !important;
                     }
+                    
+                    /* Стили для кнопок Excel и PDF - цветные с большим шрифтом */
+                    div[data-testid="stDownloadButton"] button,
+                    div[data-testid="stButton"] button {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                        color: white !important;
+                        padding: 15px 20px !important;
+                        border-radius: 8px !important;
+                        margin: 0 !important;
+                        font-weight: 700 !important;
+                        font-size: 1.1rem !important;
+                        line-height: 1.3 !important;
+                        transition: all 0.3s ease !important;
+                        border: 2px solid rgba(102, 126, 234, 0.5) !important;
+                        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3) !important;
+                        cursor: pointer !important;
+                        text-align: center !important;
+                        min-height: 60px !important;
+                        height: auto !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        white-space: normal !important;
+                        word-wrap: break-word !important;
+                        width: 100% !important;
+                    }
+                    
+                    div[data-testid="stDownloadButton"] button:hover,
+                    div[data-testid="stButton"] button:hover {
+                        transform: translateY(-2px) !important;
+                        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4) !important;
+                        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+                    }
+                    
+                    div[data-testid="stDownloadButton"] button:active,
+                    div[data-testid="stButton"] button:active {
+                        transform: translateY(0) !important;
+                        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3) !important;
+                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
                     # Создаем колонки для выравнивания кнопок с блоком описания
                     # Кнопки занимают всю ширину до блока кодов клиентов (соотношение 4:1 как у таблицы)
-                    col_buttons_container, col_empty = st.columns([4, 1])
+                    col_buttons_container, col_excel_pdf = st.columns([4, 1])
                     
                     with col_buttons_container:
                         # Переключатель для выбора типа отображения (горизонтально, на уровне с таблицей)
@@ -2006,7 +2047,53 @@ if uploaded_file is not None:
                             key="view_type_selector"
                         )
                     
-                    st.markdown("<br>", unsafe_allow_html=True)
+                    with col_excel_pdf:
+                        # Кнопки скачивания Excel и PDF справа от кнопок переключения
+                        if st.session_state.get('cohort_info') is not None:
+                            info = st.session_state.get('cohort_info', {})
+                            
+                            # Кнопка Excel
+                            if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
+                                excel_data_full = st.session_state.excel_report_data
+                                first_period = info.get('first_period', 'unknown')
+                                last_period = info.get('last_period', 'unknown')
+                                
+                                st.download_button(
+                                    label="📥 Excel",
+                                    data=excel_data_full,
+                                    file_name=f"полный_отчёт_когортный_анализ_{first_period}_{last_period}.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    use_container_width=True,
+                                    key="download_excel_top_buttons"
+                                )
+                            
+                            # Кнопка PDF
+                            if st.button("📊 PDF", key="generate_pdf_top_buttons", use_container_width=True):
+                                st.session_state.should_generate_pdf_top_buttons = True
+                                st.rerun()
+                            
+                            if st.session_state.get('should_generate_pdf_top_buttons', False):
+                                try:
+                                    # Используем функцию create_analysis_pdf
+                                    pdf_data = create_analysis_pdf()
+                                    
+                                    first_period = info.get('first_period', 'unknown')
+                                    last_period = info.get('last_period', 'unknown')
+                                    
+                                    st.download_button(
+                                        label="📊 PDF",
+                                        data=pdf_data,
+                                        file_name=f"анализ_когортный_{first_period}_{last_period}.pdf",
+                                        mime="application/pdf",
+                                        use_container_width=True,
+                                        key="download_pdf_top_buttons"
+                                    )
+                                    st.session_state.should_generate_pdf_top_buttons = False
+                                except Exception as e:
+                                    st.error(f"Ошибка генерации PDF: {str(e)}")
+                    
+                    # Уменьшаем отступ между кнопками и таблицей
+                    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
                     
                     # Основной контент
                     # Инициализируем переменные для таблицы и описания
