@@ -1287,7 +1287,6 @@ if uploaded_file is not None:
                 info = st.session_state.cohort_info
                 
                 # Отображаем кнопки скачивания под блоком загрузки (горизонтально)
-                st.markdown("---")
                 if info:
                         # Создаем функцию для генерации полного отчёта
                         def create_full_report_excel():
