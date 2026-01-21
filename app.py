@@ -1849,6 +1849,10 @@ if uploaded_file is not None:
                         font-size: 0.7rem !important;
                         width: 100% !important;
                     }
+                    /* Убираем overflow с внутренних контейнеров таблицы */
+                    div[data-testid="stDataFrame"] > div > div {
+                        overflow: visible !important;
+                    }
                     div[data-testid="stDataFrame"] th, 
                     div[data-testid="stDataFrame"] td {
                         padding: 0.2rem 0.4rem !important;
@@ -1937,13 +1941,26 @@ if uploaded_file is not None:
                         background: white;
                         border-radius: 10px;
                         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                        overflow: auto;
+                        overflow: auto !important;
                         max-width: 100% !important;
                     }
                     
+                    /* Убираем overflow с внутренних контейнеров, чтобы не было двойных ползунков */
                     div[data-testid="stDataFrame"] > div {
-                        overflow-x: auto !important;
-                        overflow-y: auto !important;
+                        overflow: hidden !important;
+                    }
+                    
+                    div[data-testid="stDataFrame"] > div > div {
+                        overflow: hidden !important;
+                    }
+                    
+                    /* Убираем overflow со всех вложенных div внутри stDataFrame */
+                    div[data-testid="stDataFrame"] > * > * {
+                        overflow: hidden !important;
+                    }
+                    
+                    div[data-testid="stDataFrame"] > * > * > * {
+                        overflow: hidden !important;
                     }
                     
                     /* Стили для блока кодов клиентов */
