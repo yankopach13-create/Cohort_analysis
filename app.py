@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import io
 import re
-import base64
 from datetime import datetime
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
@@ -1287,8 +1286,8 @@ if uploaded_file is not None:
                 # Получаем информацию из session state
                 info = st.session_state.cohort_info
                 
-                # Отображаем кнопки скачивания под блоком загрузки (горизонтально) - УДАЛЕНО
-                # Кнопки теперь размещены справа от таблицы, над блоком кодов клиентов
+                # Отображаем кнопки скачивания под блоком загрузки (горизонтально)
+                st.markdown("---")
                 if info:
                         # Создаем функцию для генерации полного отчёта
                         def create_full_report_excel():
@@ -1440,7 +1439,44 @@ if uploaded_file is not None:
                             buffer.seek(0)
                             return buffer.getvalue()
                         
-                        # Функции для генерации отчётов сохранены для использования в других местах
+                        # CSS для увеличения размера кнопок загрузки
+                        st.markdown("""
+                        <style>
+                        div[data-testid="stDownloadButton"] > button {
+                            height: 60px !important;
+                            font-size: 20px !important;
+                            font-weight: bold !important;
+                            padding: 15px 30px !important;
+                        }
+                        div[data-testid="stDownloadButton"] > button > div > p {
+                            font-size: 20px !important;
+                            font-weight: bold !important;
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
+                        
+                        # Создаем колонки для горизонтального размещения кнопок
+                        col_excel_button, col_pdf_button = st.columns(2)
+                        
+                        # Генерируем файл каждый раз при рендеринге (данные могут обновиться)
+                        # Используем сохранённый файл из session_state, если он есть (после загрузки категорий)
+                        if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
+                            excel_data_full = st.session_state.excel_report_data
+                        else:
+                            # Генерируем файл (данные категорий ещё не загружены)
+                            excel_data_full = create_full_report_excel()
+                        
+                        with col_excel_button:
+                            st.download_button(
+                                label="📥 Скачать полный отчёт в Excel",
+                                data=excel_data_full,
+                                file_name=f"полный_отчёт_когортный_анализ_{info['first_period']}_{info['last_period']}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True,
+                                key="download_full_report"
+                            )
+                        
+                        # Создаем функцию для генерации аналитического PDF отчёта
                         def create_analysis_pdf():
                             """Создает PDF отчёт с графиками и анализом"""
                             buffer = io.BytesIO()
@@ -1784,8 +1820,20 @@ if uploaded_file is not None:
                             buffer.seek(0)
                             return buffer.getvalue()
                         
-                        # Функция create_analysis_pdf сохранена для использования в других местах
-                # Старые кнопки удалены - теперь они размещены справа от таблицы
+                        # Генерируем PDF при нажатии кнопки
+                        pdf_data = create_analysis_pdf()
+                        
+                        with col_pdf_button:
+                            st.download_button(
+                                label="📊 Скачать анализ отчёта в PDF",
+                                data=pdf_data,
+                                file_name=f"анализ_когортный_{info['first_period']}_{info['last_period']}.pdf",
+                                mime="application/pdf",
+                                use_container_width=True,
+                                key="download_analysis_pdf"
+                            )
+                else:
+                    st.info("⏳ Загрузите файл и дождитесь завершения расчётов для генерации отчётов")
                 
                 # Отображение матрицы (только если данные готовы)
                 if info:
@@ -1923,25 +1971,11 @@ if uploaded_file is not None:
                     div[data-testid="stRadio"] {
                         max-width: 100%;
                     }
-                    
-                    /* Стили для кнопок Excel и PDF с иконками */
-                    div[data-testid="stDownloadButton"] button,
-                    div[data-testid="stButton"] button {
-                        font-size: 24px !important;
-                        padding: 10px !important;
-                        min-height: 40px !important;
-                    }
-                    
-                    div[data-testid="stDownloadButton"] button p,
-                    div[data-testid="stButton"] button p {
-                        font-size: 24px !important;
-                        margin: 0 !important;
-                    }
                     </style>
                     """, unsafe_allow_html=True)
                     
                     # Создаем колонки для выравнивания кнопок с блоком описания
-                    col_buttons_container, col_download_buttons = st.columns([4, 1])
+                    col_buttons_container, col_empty = st.columns([4, 1])
                     
                     with col_buttons_container:
                         # Переключатель для выбора типа отображения (горизонтально, на уровне с таблицей)
@@ -1957,109 +1991,6 @@ if uploaded_file is not None:
                             horizontal=True,
                             key="view_type_selector"
                         )
-                    
-                    with col_download_buttons:
-                        # Кнопки скачивания Excel и PDF с изображениями (справа от кнопок переключения)
-                        if st.session_state.get('cohort_info') is not None:
-                            # Кнопка Excel
-                            if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
-                                excel_data_full = st.session_state.excel_report_data
-                                info = st.session_state.get('cohort_info', {})
-                                first_period = info.get('first_period', 'unknown')
-                                last_period = info.get('last_period', 'unknown')
-                                
-                                try:
-                                    st.image("Excel.png", use_container_width=True)
-                                except:
-                                    pass
-                                
-                                st.download_button(
-                                    label="",
-                                    data=excel_data_full,
-                                    file_name=f"полный_отчёт_когортный_анализ_{first_period}_{last_period}.xlsx",
-                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                    use_container_width=True,
-                                    key="download_excel_top"
-                                )
-                            
-                            # Кнопка PDF
-                            try:
-                                st.image("PDF.png", use_container_width=True)
-                            except:
-                                pass
-                            
-                            if st.button("", key="generate_pdf_top", use_container_width=True):
-                                st.session_state.should_generate_pdf_top = True
-                                st.rerun()
-                            
-                            if st.session_state.get('should_generate_pdf_top', False):
-                                try:
-                                    # Генерируем PDF
-                                    info = st.session_state.get('cohort_info', {})
-                                    import io
-                                    from reportlab.lib.pagesizes import A4
-                                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-                                    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-                                    from reportlab.lib import colors
-                                    from reportlab.lib.units import inch
-                                    from reportlab.lib.enums import TA_CENTER
-                                    
-                                    buffer = io.BytesIO()
-                                    font_name = 'Helvetica'
-                                    font_name_bold = 'Helvetica-Bold'
-                                    
-                                    try:
-                                        if platform.system() == 'Windows':
-                                            windows_fonts = [r'C:\Windows\Fonts\arial.ttf', r'C:\Windows\Fonts\calibri.ttf']
-                                            for font_path in windows_fonts:
-                                                if os.path.exists(font_path):
-                                                    try:
-                                                        font_name = 'CyrillicFont'
-                                                        font_name_bold = 'CyrillicFont-Bold'
-                                                        pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                                        pdfmetrics.registerFont(TTFont(font_name_bold, font_path))
-                                                        break
-                                                    except:
-                                                        continue
-                                    except:
-                                        pass
-                                    
-                                    cohort_matrix = st.session_state.cohort_matrix
-                                    sorted_periods = st.session_state.sorted_periods
-                                    accumulation_matrix = st.session_state.accumulation_matrix
-                                    accumulation_percent_matrix = st.session_state.accumulation_percent_matrix
-                                    inflow_matrix = st.session_state.inflow_matrix
-                                    churn_table = st.session_state.churn_table
-                                    
-                                    doc = SimpleDocTemplate(buffer, pagesize=A4)
-                                    story = []
-                                    styles = getSampleStyleSheet()
-                                    
-                                    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontName=font_name_bold, fontSize=24, textColor=colors.HexColor('#1f77b4'), spaceAfter=30, alignment=TA_CENTER)
-                                    normal_style = ParagraphStyle('CustomNormal', parent=styles['Normal'], fontName=font_name, fontSize=10)
-                                    
-                                    story.append(Paragraph("КОГОРТНЫЙ АНАЛИЗ", title_style))
-                                    story.append(Spacer(1, 0.3*inch))
-                                    story.append(Paragraph(f"Период анализа: {info['first_period']} - {info['last_period']}", normal_style))
-                                    
-                                    doc.build(story)
-                                    buffer.seek(0)
-                                    pdf_data = buffer.getvalue()
-                                    
-                                    first_period = info.get('first_period', 'unknown')
-                                    last_period = info.get('last_period', 'unknown')
-                                    
-                                    st.download_button(
-                                        label="",
-                                        data=pdf_data,
-                                        file_name=f"анализ_когортный_{first_period}_{last_period}.pdf",
-                                        mime="application/pdf",
-                                        use_container_width=True,
-                                        key="download_pdf_top"
-                                    )
-                                    st.session_state.should_generate_pdf_top = False
-                                except Exception as e:
-                                    st.error(f"Ошибка: {str(e)}")
                     
                     st.markdown("<br>", unsafe_allow_html=True)
                     
