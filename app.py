@@ -1936,31 +1936,12 @@ if uploaded_file is not None:
                         color: white !important;
                     }
                     
-                    /* Стили для таблицы */
+                    /* Стили для таблицы - только базовое оформление, не мешаем встроенному тулбару */
                     div[data-testid="stDataFrame"] {
                         background: white;
                         border-radius: 10px;
                         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                        overflow: auto !important;
                         max-width: 100% !important;
-                    }
-                    
-                    /* Убираем overflow с внутренних контейнеров, чтобы не было двойных ползунков */
-                    div[data-testid="stDataFrame"] > div {
-                        overflow: hidden !important;
-                    }
-                    
-                    div[data-testid="stDataFrame"] > div > div {
-                        overflow: hidden !important;
-                    }
-                    
-                    /* Убираем overflow со всех вложенных div внутри stDataFrame */
-                    div[data-testid="stDataFrame"] > * > * {
-                        overflow: hidden !important;
-                    }
-                    
-                    div[data-testid="stDataFrame"] > * > * > * {
-                        overflow: hidden !important;
                     }
                     
                     /* Стили для блока кодов клиентов */
@@ -2092,10 +2073,11 @@ if uploaded_file is not None:
                     col_table, col_clients = st.columns([4, 1])
                     
                     with col_table:
-                        # Отображение таблицы (широкая)
+                        # Отображение таблицы (широкая) с поддержкой полноэкранного режима
                         st.dataframe(
                             display_matrix,
-                            use_container_width=True
+                            use_container_width=True,
+                            height=None  # None позволяет Streamlit автоматически определить высоту и показать тулбар
                         )
                     
                     with col_clients:
