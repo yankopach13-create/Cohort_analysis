@@ -2641,7 +2641,7 @@ if uploaded_file is not None:
                                     # Создаем итоговую строку по периодам (уникальные клиенты по всем категориям)
                                     totals_row = pd.Series(
                                         {period: len(period_unique_clients[period]) for period in sorted_periods},
-                                        name='Итого'
+                                        name='Кол-во клиентов'
                                     )
                                     
                                     # Создаем итоговый столбец по категориям (уникальные клиенты за весь период)
@@ -2652,21 +2652,11 @@ if uploaded_file is not None:
                                     
                                     # Добавляем итоговую строку в таблицу
                                     category_period_table_with_totals = category_period_table.copy()
-                                    category_period_table_with_totals.loc['Итого'] = totals_row
+                                    category_period_table_with_totals.loc['Кол-во клиентов'] = totals_row
                                     
                                     # Добавляем итоговый столбец
                                     category_period_table_with_totals['Итого'] = totals_col
-                                    category_period_table_with_totals.loc['Итого', 'Итого'] = len(present_in_categories)
-                                    
-                                    # Создаем таблицу с итогами по периодам (над основной таблицей)
-                                    totals_periods_df = pd.DataFrame([totals_row])
-                                    totals_periods_df.index = ['Кол-во клиентов']
-                                    
-                                    # Отображаем итоговую таблицу по периодам
-                                    st.dataframe(
-                                        totals_periods_df,
-                                        use_container_width=True
-                                    )
+                                    category_period_table_with_totals.loc['Кол-во клиентов', 'Итого'] = len(present_in_categories)
                                     
                                     # Отображаем основную таблицу с итогами
                                     st.dataframe(
@@ -2674,7 +2664,7 @@ if uploaded_file is not None:
                                         use_container_width=True
                                     )
                                     
-                                    # Добавляем стили для центрирования
+                                    # Добавляем стили для центрирования и выделения итоговых значений жирным
                                     st.markdown("""
                                     <style>
                                     div[data-testid="stDataFrame"] table td {
@@ -2682,6 +2672,18 @@ if uploaded_file is not None:
                                     }
                                     div[data-testid="stDataFrame"] table th {
                                         text-align: center !important;
+                                    }
+                                    /* Выделяем последнюю строку (итоговая строка "Кол-во клиентов") жирным */
+                                    div[data-testid="stDataFrame"] table tbody tr:last-child td {
+                                        font-weight: bold !important;
+                                    }
+                                    /* Выделяем последний столбец (итоговый столбец "Итого") жирным */
+                                    div[data-testid="stDataFrame"] table tbody td:last-child {
+                                        font-weight: bold !important;
+                                    }
+                                    /* Выделяем заголовок итогового столбца жирным */
+                                    div[data-testid="stDataFrame"] table thead th:last-child {
+                                        font-weight: bold !important;
                                     }
                                     </style>
                                     """, unsafe_allow_html=True)
