@@ -2571,12 +2571,15 @@ if uploaded_file is not None:
                                     # % оттока из сети
                                     network_churn_percent = (network_churn / cohort_size * 100) if cohort_size > 0 else 0
                                     
-                                    # Выводим метрики
+                                    # Выводим метрики компактно
                                     st.markdown("---")
-                                    st.markdown(f"**Клиентов в когорте:**\n\n{cohort_size}")
-                                    st.markdown(f"**Клиентов когорты присутствуют в других категориях:**\n\n{present_count}")
-                                    st.markdown(f"**Отток из сети:**\n\n{network_churn}")
-                                    st.markdown(f"**% оттока из сети от клиентов когорты:**\n\n{network_churn_percent:.1f}%")
+                                    metrics_text = f"""
+                                    **Клиентов в когорте:** {cohort_size}  
+                                    **Клиентов когорты присутствуют в других категориях:** {present_count}  
+                                    **Отток из сети:** {network_churn}  
+                                    **% оттока из сети от клиентов когорты:** {network_churn_percent:.1f}%
+                                    """
+                                    st.markdown(metrics_text)
                                 
                                 with col_table:
                                     # Создаем таблицу: категории по строкам, периоды по столбцам
@@ -2672,7 +2675,7 @@ if uploaded_file is not None:
                                         use_container_width=True
                                     )
                                     
-                                    # Добавляем стили для центрирования и выделения итоговых значений жирным
+                                    # Добавляем стили для центрирования, выделения итоговых значений жирным и пастельным цветом
                                     st.markdown("""
                                     <style>
                                     div[data-testid="stDataFrame"] table td {
@@ -2681,24 +2684,26 @@ if uploaded_file is not None:
                                     div[data-testid="stDataFrame"] table th {
                                         text-align: center !important;
                                     }
-                                    /* Выделяем первую строку (итоговая строка "Итого клиентов") жирным */
+                                    /* Выделяем первую строку (итоговая строка "Итого клиентов") жирным и пастельным цветом */
                                     div[data-testid="stDataFrame"] table tbody tr:first-child td,
                                     div[data-testid="stDataFrame"] table tbody tr:first-child th {
                                         font-weight: bold !important;
+                                        background-color: #E3F2FD !important;
                                     }
-                                    /* Выделяем первый столбец данных (итоговый столбец "Итого") жирным */
-                                    div[data-testid="stDataFrame"] table tbody td:first-of-type,
-                                    div[data-testid="stDataFrame"] table thead th:first-of-type {
-                                        font-weight: bold !important;
-                                    }
-                                    /* Альтернативный способ через nth-child для первого столбца данных */
+                                    /* Выделяем первый столбец данных (итоговый столбец "Итого") жирным и пастельным цветом */
                                     div[data-testid="stDataFrame"] table tbody tr td:nth-child(2),
                                     div[data-testid="stDataFrame"] table thead tr th:nth-child(2) {
+                                        font-weight: bold !important;
+                                        background-color: #E3F2FD !important;
+                                    }
+                                    /* Выделяем ячейку пересечения итоговых строки и столбца */
+                                    div[data-testid="stDataFrame"] table tbody tr:first-child td:nth-child(2) {
+                                        background-color: #BBDEFB !important;
                                         font-weight: bold !important;
                                     }
                                     </style>
                                     <script>
-                                    // Дополнительный скрипт для гарантированного выделения жирным
+                                    // Дополнительный скрипт для гарантированного выделения жирным и цветом
                                     setTimeout(function() {
                                         const tables = document.querySelectorAll('div[data-testid="stDataFrame"] table');
                                         tables.forEach(table => {
@@ -2707,6 +2712,9 @@ if uploaded_file is not None:
                                             if (firstRow) {
                                                 firstRow.querySelectorAll('td, th').forEach(cell => {
                                                     cell.style.fontWeight = 'bold';
+                                                    if (!cell.style.backgroundColor || cell.style.backgroundColor === '') {
+                                                        cell.style.backgroundColor = '#E3F2FD';
+                                                    }
                                                 });
                                             }
                                             // Первый столбец данных (итоговый)
@@ -2714,11 +2722,20 @@ if uploaded_file is not None:
                                                 const firstDataCell = row.querySelector('td:nth-child(2)');
                                                 if (firstDataCell) {
                                                     firstDataCell.style.fontWeight = 'bold';
+                                                    if (!firstDataCell.style.backgroundColor || firstDataCell.style.backgroundColor === '') {
+                                                        firstDataCell.style.backgroundColor = '#E3F2FD';
+                                                    }
                                                 }
                                             });
                                             const firstHeader = table.querySelector('thead th:nth-child(2)');
                                             if (firstHeader) {
                                                 firstHeader.style.fontWeight = 'bold';
+                                                firstHeader.style.backgroundColor = '#E3F2FD';
+                                            }
+                                            // Ячейка пересечения
+                                            const intersectionCell = table.querySelector('tbody tr:first-child td:nth-child(2)');
+                                            if (intersectionCell) {
+                                                intersectionCell.style.backgroundColor = '#BBDEFB';
                                             }
                                         });
                                     }, 100);
