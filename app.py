@@ -2641,7 +2641,7 @@ if uploaded_file is not None:
                                     # Создаем итоговую строку по периодам (уникальные клиенты по всем категориям)
                                     totals_row = pd.Series(
                                         {period: len(period_unique_clients[period]) for period in sorted_periods},
-                                        name='Кол-во клиентов'
+                                        name='Итого клиентов'
                                     )
                                     
                                     # Создаем итоговый столбец по категориям (уникальные клиенты за весь период)
@@ -2652,11 +2652,15 @@ if uploaded_file is not None:
                                     
                                     # Добавляем итоговую строку в таблицу
                                     category_period_table_with_totals = category_period_table.copy()
-                                    category_period_table_with_totals.loc['Кол-во клиентов'] = totals_row
+                                    category_period_table_with_totals.loc['Итого клиентов'] = totals_row
                                     
                                     # Добавляем итоговый столбец
                                     category_period_table_with_totals['Итого'] = totals_col
-                                    category_period_table_with_totals.loc['Кол-во клиентов', 'Итого'] = len(present_in_categories)
+                                    category_period_table_with_totals.loc['Итого клиентов', 'Итого'] = len(present_in_categories)
+                                    
+                                    # Переупорядочиваем строки: итоговая строка наверх
+                                    new_index = ['Итого клиентов'] + [cat for cat in categories]
+                                    category_period_table_with_totals = category_period_table_with_totals.reindex(new_index)
                                     
                                     # Отображаем основную таблицу с итогами
                                     st.dataframe(
@@ -2673,8 +2677,8 @@ if uploaded_file is not None:
                                     div[data-testid="stDataFrame"] table th {
                                         text-align: center !important;
                                     }
-                                    /* Выделяем последнюю строку (итоговая строка "Кол-во клиентов") жирным */
-                                    div[data-testid="stDataFrame"] table tbody tr:last-child td {
+                                    /* Выделяем первую строку (итоговая строка "Итого клиентов") жирным */
+                                    div[data-testid="stDataFrame"] table tbody tr:first-child td {
                                         font-weight: bold !important;
                                     }
                                     /* Выделяем последний столбец (итоговый столбец "Итого") жирным */
