@@ -2506,195 +2506,103 @@ if uploaded_file is not None:
                                 categories = df_categories[group_col].dropna().unique()
                                 categories = sorted([str(cat) for cat in categories if str(cat).strip() != ''])
                                 
-                                # Создаем словарь: категория -> множество кодов клиентов
-                                category_clients = {}
-                                for category in categories:
-                                    category_data = df_categories[df_categories[group_col] == category]
-                                    client_codes = set(category_data[client_code_col].dropna().astype(str).unique())
-                                    category_clients[category] = client_codes
-                                
                                 # Получаем клиентов оттока для каждой когорты
                                 period_clients_cache = st.session_state.get('period_clients_cache', None)
                                 
-                                # Создаем таблицу: категории по строкам, когорты по столбцам
-                                category_cohort_table = pd.DataFrame(index=categories, columns=sorted_periods)
+                                # Сохраняем данные для Excel отчёта (пустые таблицы, так как логика изменилась)
+                                st.session_state.category_summary_table = None
+                                st.session_state.category_cohort_table = None
                                 
-                                # Сохраняем для каждой когорты уникальных клиентов, присутствующих в других категориях
-                                total_present_by_cohort = {}
-                                
-                                for cohort_period in sorted_periods:
-                                    # Получаем клиентов оттока для этой когорты
-                                    churn_clients_set = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_period, period_clients_cache))
-                                    churn_clients_set = {str(client) for client in churn_clients_set}
-                                    
-                                    # Собираем всех уникальных клиентов оттока, которые присутствуют хотя бы в одной категории
-                                    unique_clients_in_categories = set()
-                                    
-                                    # Для каждой категории считаем пересечение
-                                    for category in categories:
-                                        category_clients_set = category_clients.get(category, set())
-                                        # Находим клиентов оттока, которые есть в этой категории
-                                        intersection = churn_clients_set & category_clients_set
-                                        category_cohort_table.loc[category, cohort_period] = len(intersection)
-                                        # Добавляем клиентов в общее множество
-                                        unique_clients_in_categories.update(intersection)
-                                    
-                                    # Сохраняем количество уникальных клиентов по всем категориям
-                                    total_present_by_cohort[cohort_period] = len(unique_clients_in_categories)
-                                
-                                # Заполняем NaN нулями
-                                category_cohort_table = category_cohort_table.fillna(0).astype(int)
-                                
-                                # Получаем отток когорты из churn_table
-                                churn_table = st.session_state.churn_table
-                                churn_by_cohort = {}
-                                cohort_sizes = {}
-                                network_churn_by_cohort = {}
-                                network_churn_percent_by_cohort = {}
-                                
-                                for cohort_period in sorted_periods:
-                                    cohort_row = churn_table[churn_table['Когорта'] == cohort_period]
-                                    if not cohort_row.empty:
-                                        churn_count = int(cohort_row.iloc[0]['Отток кол-во'])
-                                        cohort_size = int(cohort_row.iloc[0]['Кол-во клиентов когорты'])
-                                        churn_by_cohort[cohort_period] = churn_count
-                                        cohort_sizes[cohort_period] = cohort_size
-                                        
-                                        # Отток из сети = Отток когорты - Итого присутствуют в других категориях
-                                        total_present = total_present_by_cohort.get(cohort_period, 0)
-                                        network_churn = max(0, churn_count - total_present)
-                                        network_churn_by_cohort[cohort_period] = network_churn
-                                        
-                                        # Доля оттока из сети от когорты = (Отток из сети / Кол-во клиентов когорты) * 100
-                                        if cohort_size > 0:
-                                            network_churn_percent = (network_churn / cohort_size) * 100
-                                        else:
-                                            network_churn_percent = 0
-                                        network_churn_percent_by_cohort[cohort_period] = network_churn_percent
-                                    else:
-                                        churn_by_cohort[cohort_period] = 0
-                                        cohort_sizes[cohort_period] = 0
-                                        network_churn_by_cohort[cohort_period] = 0
-                                        network_churn_percent_by_cohort[cohort_period] = 0
-                                
-                                # Форматируем процент с символом % для отображения
-                                network_churn_percent_formatted = {
-                                    cohort: f"{value:.1f}%" 
-                                    for cohort, value in network_churn_percent_by_cohort.items()
-                                }
-                                
-                                # Создаем верхнюю таблицу с итоговыми метриками (3 строки) для отображения
-                                summary_table_display = pd.DataFrame({
-                                    'Отток из сети': network_churn_by_cohort,
-                                    'Доля оттока из сети от когорты': network_churn_percent_formatted,
-                                    'Итого присутствуют в других категориях': total_present_by_cohort
-                                })
-                                summary_table_display = summary_table_display.T  # Транспонируем, чтобы строки стали строками
-                                
-                                # Создаем таблицу с числовыми значениями для Excel (проценты как доли)
-                                summary_table_excel = pd.DataFrame({
-                                    'Отток из сети': network_churn_by_cohort,
-                                    'Доля оттока из сети от когорты': network_churn_percent_by_cohort,  # Проценты как числа (например, 15.3)
-                                    'Итого присутствуют в других категориях': total_present_by_cohort
-                                })
-                                summary_table_excel = summary_table_excel.T  # Транспонируем
-                                
-                                # Сохраняем данные в session_state для Excel отчёта
-                                st.session_state.category_summary_table = summary_table_excel
-                                st.session_state.category_cohort_table = category_cohort_table
-                                
-                                # Обновляем Excel отчёт с новыми данными
-                                # Очищаем кеш, если он был использован
+                                # Обновляем Excel отчёт (очищаем старые данные)
                                 if 'excel_report_cache_key' in st.session_state:
                                     del st.session_state.excel_report_cache_key
                                 
-                                # Перегенерируем Excel отчёт с учётом новых данных
                                 try:
                                     st.session_state.excel_report_data = create_full_report_excel()
                                 except Exception as e:
                                     st.warning(f"Не удалось обновить Excel отчёт: {str(e)}")
                                 
-                                # Отображаем верхнюю таблицу
+                                # Новый интерфейс: слева выбор когорты, справа таблица
                                 st.markdown("### 📊 Присутствие клиентов оттока когорты в других категориях товаров")
-                                st.dataframe(
-                                    summary_table_display,
-                                    use_container_width=True
-                                )
                                 
-                                # Разделитель
-                                st.markdown("---")
+                                col_cohort_select, col_table = st.columns([1, 4])
                                 
-                                # Отображаем таблицу с категориями (без заголовка, ближе к верхней таблице)
-                                st.dataframe(
-                                    category_cohort_table,
-                                    use_container_width=True
-                                )
-                                
-                                # Добавляем стили для центрирования
-                                st.markdown("""
-                                <style>
-                                div[data-testid="stDataFrame"] table td {
-                                    text-align: center !important;
-                                }
-                                div[data-testid="stDataFrame"] table th {
-                                    text-align: center !important;
-                                }
-                                </style>
-                                """, unsafe_allow_html=True)
-                                
-                                # Сохраняем данные о клиентах оттока из сети для каждой когорты
-                                network_churn_clients_by_cohort = {}
-                                
-                                # Собираем всех клиентов, присутствующих в категориях
-                                all_category_clients = set()
-                                for category_clients_set in category_clients.values():
-                                    all_category_clients.update(category_clients_set)
-                                
-                                for cohort_period in sorted_periods:
-                                    # Получаем клиентов оттока для этой когорты
-                                    churn_clients_set = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_period, period_clients_cache))
-                                    churn_clients_set = {str(client) for client in churn_clients_set}
-                                    
-                                    # Клиенты оттока из сети = клиенты оттока, которые НЕ присутствуют ни в одной категории
-                                    network_churn_clients = churn_clients_set - all_category_clients
-                                    network_churn_clients_by_cohort[cohort_period] = sorted(list(network_churn_clients))
-                                
-                                # Сохраняем в session_state для использования в блоке ниже
-                                st.session_state.network_churn_clients_by_cohort = network_churn_clients_by_cohort
-                                
-                                # Блок для скачивания кодов клиентов оттока из сети
-                                st.markdown("---")
-                                with st.expander("👥 Коды клиентов оттока из сети", expanded=False):
-                                    st.subheader("Выбор когорты для скачивания клиентов оттока из сети")
-                                    
-                                    selected_network_churn_cohort = st.selectbox(
+                                with col_cohort_select:
+                                    selected_cohort = st.selectbox(
                                         "Выберите когорту:",
                                         options=sorted_periods,
                                         index=0,
-                                        help="Выберите когорту для скачивания списка клиентов оттока из сети",
-                                        key="network_churn_cohort_select"
+                                        help="Выберите когорту для анализа присутствия её клиентов оттока в других категориях",
+                                        key="category_cohort_select"
+                                    )
+                                
+                                with col_table:
+                                    # Получаем клиентов оттока для выбранной когорты
+                                    churn_clients_set = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, period_clients_cache))
+                                    churn_clients_set = {str(client) for client in churn_clients_set}
+                                    
+                                    # Создаем таблицу: категории по строкам, периоды по столбцам
+                                    category_period_table = pd.DataFrame(index=categories, columns=sorted_periods)
+                                    
+                                    # Если есть столбец "Год-месяц", используем его для фильтрации по периодам
+                                    if year_month_col is not None:
+                                        # Для каждого периода проверяем присутствие клиентов оттока в категориях
+                                        for period in sorted_periods:
+                                            # Фильтруем данные по периоду
+                                            period_data = df_categories[df_categories[year_month_col] == period]
+                                            
+                                            # Для каждой категории считаем количество клиентов оттока, присутствующих в этом периоде
+                                            for category in categories:
+                                                # Данные категории в этом периоде
+                                                category_period_data = period_data[
+                                                    (period_data[group_col] == category) & 
+                                                    (period_data[client_code_col].notna())
+                                                ]
+                                                
+                                                # Коды клиентов этой категории в этом периоде
+                                                category_period_clients = set(
+                                                    category_period_data[client_code_col].dropna().astype(str).unique()
+                                                )
+                                                
+                                                # Находим пересечение: клиенты оттока выбранной когорты, которые есть в этой категории в этом периоде
+                                                intersection = churn_clients_set & category_period_clients
+                                                category_period_table.loc[category, period] = len(intersection)
+                                    else:
+                                        # Если нет столбца "Год-месяц", используем все данные без фильтрации по периоду
+                                        # Создаем словарь: категория -> множество кодов клиентов
+                                        category_clients = {}
+                                        for category in categories:
+                                            category_data = df_categories[df_categories[group_col] == category]
+                                            client_codes = set(category_data[client_code_col].dropna().astype(str).unique())
+                                            category_clients[category] = client_codes
+                                        
+                                        # Для каждого периода (для совместимости с таблицей) используем одинаковые данные
+                                        for period in sorted_periods:
+                                            for category in categories:
+                                                category_clients_set = category_clients.get(category, set())
+                                                intersection = churn_clients_set & category_clients_set
+                                                category_period_table.loc[category, period] = len(intersection)
+                                    
+                                    # Заполняем NaN нулями
+                                    category_period_table = category_period_table.fillna(0).astype(int)
+                                    
+                                    # Отображаем таблицу
+                                    st.dataframe(
+                                        category_period_table,
+                                        use_container_width=True
                                     )
                                     
-                                    # Получаем клиентов оттока из сети для выбранной когорты
-                                    network_churn_clients = network_churn_clients_by_cohort.get(selected_network_churn_cohort, [])
-                                    
-                                    if network_churn_clients:
-                                        network_churn_count = len(network_churn_clients)
-                                        network_churn_value = network_churn_by_cohort.get(selected_network_churn_cohort, 0)
-                                        
-                                        st.write(f"**Найдено клиентов оттока из сети: {network_churn_count}**")
-                                        
-                                        clients_csv = "\n".join([str(client) for client in network_churn_clients])
-                                        st.download_button(
-                                            label=f"💾 Скачать список клиентов оттока из сети ({network_churn_count} шт.)",
-                                            data=clients_csv,
-                                            file_name=f"отток_из_сети_когорта_{selected_network_churn_cohort}.txt",
-                                            mime="text/plain",
-                                            use_container_width=True,
-                                            key="download_network_churn_clients"
-                                        )
-                                    else:
-                                        st.info(f"ℹ️ Отток из сети для когорты {selected_network_churn_cohort} равен 0 или все клиенты оттока присутствуют в других категориях")
+                                    # Добавляем стили для центрирования
+                                    st.markdown("""
+                                    <style>
+                                    div[data-testid="stDataFrame"] table td {
+                                        text-align: center !important;
+                                    }
+                                    div[data-testid="stDataFrame"] table th {
+                                        text-align: center !important;
+                                    }
+                                    </style>
+                                    """, unsafe_allow_html=True)
                                 
                         except Exception as e:
                             st.error(f"❌ Ошибка при обработке файла: {str(e)}")
