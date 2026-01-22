@@ -2722,14 +2722,14 @@ if uploaded_file is not None:
                                 break
                         if not image_found:
                             st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: qlik_template_categories.png, шаблон_qlik_категории.png или churn_categories_template.png")
-                    
+                        
                         # Загрузчик Excel файла прямо под изображением
-                    uploaded_file_categories = st.file_uploader(
-                        "Выберите Excel файл с данными о присутствии клиентов оттока в других категориях",
-                        type=['xlsx', 'xls'],
-                        help="Загрузите файл, скачанный из Qlik согласно шаблону выше",
-                        key="upload_categories_file"
-                    )
+                        uploaded_file_categories = st.file_uploader(
+                            "Выберите Excel файл с данными о присутствии клиентов оттока в других категориях",
+                            type=['xlsx', 'xls'],
+                            help="Загрузите файл, скачанный из Qlik согласно шаблону выше",
+                            key="upload_categories_file"
+                        )
                     
                     # Обработка загруженного файла
                     if uploaded_file_categories is not None:
@@ -3110,20 +3110,20 @@ if uploaded_file is not None:
                                     category_period_table_with_totals = category_period_table_with_totals[new_columns]
                                     
                                     # Отображаем основную таблицу с итогами
-                                st.dataframe(
+                                    st.dataframe(
                                         category_period_table_with_totals,
-                                    use_container_width=True
-                                )
-                                
+                                        use_container_width=True
+                                    )
+                                    
                                     # Добавляем стили для центрирования, выделения итоговых значений жирным, пастельным цветом и закрепления
-                                st.markdown("""
-                                <style>
-                                div[data-testid="stDataFrame"] table td {
-                                    text-align: center !important;
-                                }
-                                div[data-testid="stDataFrame"] table th {
-                                    text-align: center !important;
-                                }
+                                    st.markdown("""
+                                    <style>
+                                    div[data-testid="stDataFrame"] table td {
+                                        text-align: center !important;
+                                    }
+                                    div[data-testid="stDataFrame"] table th {
+                                        text-align: center !important;
+                                    }
                                     /* Закрепляем первую строку (итоговая строка "Итого клиентов") сверху */
                                     div[data-testid="stDataFrame"] table tbody tr:first-child td,
                                     div[data-testid="stDataFrame"] table tbody tr:first-child th {
@@ -3157,7 +3157,7 @@ if uploaded_file is not None:
                                         left: 0 !important;
                                         z-index: 6 !important;
                                     }
-                                </style>
+                                    </style>
                                     <script>
                                     // Дополнительный скрипт для гарантированного выделения жирным, цветом и закрепления
                                     setTimeout(function() {
@@ -3209,7 +3209,7 @@ if uploaded_file is not None:
                                         });
                                     }, 100);
                                     </script>
-                                """, unsafe_allow_html=True)
+                                    """, unsafe_allow_html=True)
                                 
                         except Exception as e:
                             st.error(f"❌ Ошибка при обработке файла: {str(e)}")
@@ -3218,27 +3218,6 @@ if uploaded_file is not None:
                     # Сводная таблица по всем когортам (после блока присутствия клиентов)
                     st.markdown("---")
                     st.subheader("📊 Сводная таблица по всем когортам")
-                    
-                    # Добавляем стили для полного отображения сводной таблицы
-                    st.markdown("""
-                    <style>
-                    /* Стили для сводной таблицы - убираем ограничение высоты */
-                    div[data-testid="stDataFrame"] {
-                        max-height: none !important;
-                        height: auto !important;
-                    }
-                    div[data-testid="stDataFrame"] > div {
-                        max-height: none !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                    }
-                    div[data-testid="stDataFrame"] > div > div {
-                        max-height: none !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
                     
                     if st.session_state.get('churn_table') is not None:
                         churn_table = st.session_state.churn_table
@@ -3393,7 +3372,7 @@ if uploaded_file is not None:
                             use_container_width=True
                         )
                         
-                        # Добавляем стили для центрирования (стили для высоты уже добавлены выше)
+                        # Добавляем стили для центрирования
                         st.markdown("""
                         <style>
                         div[data-testid="stDataFrame"] table td {
