@@ -2364,6 +2364,23 @@ if uploaded_file is not None:
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
+                                
+                                # Кнопка для скачивания всех когорт (всегда видна)
+                                all_churn_clients = set()
+                                for cohort in sorted_periods:
+                                    cohort_churn = get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort, period_clients_cache)
+                                    all_churn_clients.update(cohort_churn)
+                                
+                                if all_churn_clients:
+                                    all_clients_csv = "\n".join([str(client) for client in sorted(all_churn_clients)])
+                                    st.download_button(
+                                        label=f"💾 Скачать коды всех когорт ({len(all_churn_clients)})",
+                                        data=all_clients_csv,
+                                        file_name=f"отток_клиентов_все_когорты.txt",
+                                        mime="text/plain",
+                                        use_container_width=True,
+                                        key="download_all_churn_clients"
+                                    )
                     
                     # Шестой блок - Присутствие клиентов оттока в других категориях
                     st.markdown("---")
