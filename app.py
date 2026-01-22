@@ -2382,130 +2382,6 @@ if uploaded_file is not None:
                                         key="download_all_churn_clients"
                                     )
                     
-                    # Сводная таблица по всем когортам
-                    st.markdown("---")
-                    st.subheader("📊 Сводная таблица по всем когортам")
-                    
-                    if st.session_state.get('churn_table') is not None:
-                        churn_table = st.session_state.churn_table
-                        
-                        # Создаем сводную таблицу
-                        summary_data = {}
-                        
-                        # 1. Кол-во клиентов в когорте
-                        summary_data['Кол-во клиентов в когорте'] = {}
-                        for _, row in churn_table.iterrows():
-                            cohort = row['Когорта']
-                            summary_data['Кол-во клиентов в когорте'][cohort] = int(row['Кол-во клиентов когорты'])
-                        
-                        # 2. Отток из категории когорты
-                        summary_data['Отток из категории когорты'] = {}
-                        for _, row in churn_table.iterrows():
-                            cohort = row['Когорта']
-                            summary_data['Отток из категории когорты'][cohort] = int(row['Отток кол-во'])
-                        
-                        # 3. Отток из категории когорты %
-                        summary_data['Отток из категории когорты %'] = {}
-                        for _, row in churn_table.iterrows():
-                            cohort = row['Когорта']
-                            summary_data['Отток из категории когорты %'][cohort] = f"{row['Отток %']:.1f}%"
-                        
-                        # Инициализируем словари для метрик 4-7 заранее (заполняем нулями по умолчанию)
-                        summary_data['Кол-во клиентов когорты в других категориях'] = {}
-                        summary_data['Кол-во клиентов когорты в других категориях %'] = {}
-                        summary_data['Отток из сети'] = {}
-                        summary_data['Отток из сети %'] = {}
-                        
-                        for cohort in sorted_periods:
-                            summary_data['Кол-во клиентов когорты в других категориях'][cohort] = 0
-                            summary_data['Кол-во клиентов когорты в других категориях %'][cohort] = "0.0%"
-                            summary_data['Отток из сети'][cohort] = 0
-                            summary_data['Отток из сети %'][cohort] = "0.0%"
-                        
-                        # 4-7. Данные о присутствии в других категориях и оттоке из сети (если есть данные)
-                        if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
-                            category_summary = st.session_state.category_summary_table
-                            
-                            # 4. Кол-во клиентов когорты в других категориях (обновляем значения)
-                            if 'Итого присутствуют в других категориях' in category_summary.index:
-                                for cohort in sorted_periods:
-                                    if cohort in category_summary.columns:
-                                        value = category_summary.loc['Итого присутствуют в других категориях', cohort]
-                                        summary_data['Кол-во клиентов когорты в других категориях'][cohort] = int(value) if pd.notna(value) else 0
-                                    else:
-                                        summary_data['Кол-во клиентов когорты в других категориях'][cohort] = 0
-                            else:
-                                for cohort in sorted_periods:
-                                    summary_data['Кол-во клиентов когорты в других категориях'][cohort] = 0
-                            
-                            # 5. Кол-во клиентов когорты в других категориях % (обновляем значения)
-                            for cohort in sorted_periods:
-                                cohort_size = summary_data['Кол-во клиентов в когорте'].get(cohort, 0)
-                                present_count = summary_data['Кол-во клиентов когорты в других категориях'].get(cohort, 0)
-                                if cohort_size > 0:
-                                    percent = (present_count / cohort_size) * 100
-                                    summary_data['Кол-во клиентов когорты в других категориях %'][cohort] = f"{percent:.1f}%"
-                                else:
-                                    summary_data['Кол-во клиентов когорты в других категориях %'][cohort] = "0.0%"
-                            
-                            # 6. Отток из сети (обновляем значения)
-                            if 'Отток из сети' in category_summary.index:
-                                for cohort in sorted_periods:
-                                    if cohort in category_summary.columns:
-                                        value = category_summary.loc['Отток из сети', cohort]
-                                        summary_data['Отток из сети'][cohort] = int(value) if pd.notna(value) else 0
-                                    else:
-                                        summary_data['Отток из сети'][cohort] = 0
-                            else:
-                                for cohort in sorted_periods:
-                                    summary_data['Отток из сети'][cohort] = 0
-                            
-                            # 7. Отток из сети % (обновляем значения)
-                            if 'Доля оттока из сети от когорты' in category_summary.index:
-                                for cohort in sorted_periods:
-                                    if cohort in category_summary.columns:
-                                        value = category_summary.loc['Доля оттока из сети от когорты', cohort]
-                                        if pd.notna(value):
-                                            summary_data['Отток из сети %'][cohort] = f"{value:.1f}%"
-                                        else:
-                                            summary_data['Отток из сети %'][cohort] = "0.0%"
-                                    else:
-                                        summary_data['Отток из сети %'][cohort] = "0.0%"
-                            else:
-                                # Если нет строки "Доля оттока из сети от когорты", вычисляем процент вручную
-                                for cohort in sorted_periods:
-                                    cohort_size = summary_data['Кол-во клиентов в когорте'].get(cohort, 0)
-                                    network_churn = summary_data['Отток из сети'].get(cohort, 0)
-                                    if cohort_size > 0:
-                                        percent = (network_churn / cohort_size) * 100
-                                        summary_data['Отток из сети %'][cohort] = f"{percent:.1f}%"
-                                    else:
-                                        summary_data['Отток из сети %'][cohort] = "0.0%"
-                        # Если нет данных о категориях, значения уже заполнены нулями при инициализации выше
-                        
-                        # Создаем DataFrame
-                        summary_df = pd.DataFrame(summary_data, index=sorted_periods).T
-                        
-                        # Отображаем таблицу
-                        st.dataframe(
-                            summary_df,
-                            use_container_width=True
-                        )
-                        
-                        # Добавляем стили для центрирования
-                        st.markdown("""
-                        <style>
-                        div[data-testid="stDataFrame"] table td {
-                            text-align: center !important;
-                        }
-                        div[data-testid="stDataFrame"] table th {
-                            text-align: center !important;
-                        }
-                        </style>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.info("Загрузите данные для отображения сводной таблицы")
-                    
                     # Шестой блок - Присутствие клиентов оттока в других категориях
                     st.markdown("---")
                     
@@ -2928,6 +2804,142 @@ if uploaded_file is not None:
                         except Exception as e:
                             st.error(f"❌ Ошибка при обработке файла: {str(e)}")
                             st.exception(e)
+                    
+                    # Сводная таблица по всем когортам (после блока присутствия клиентов)
+                    st.markdown("---")
+                    st.subheader("📊 Сводная таблица по всем когортам")
+                    
+                    if st.session_state.get('churn_table') is not None:
+                        churn_table = st.session_state.churn_table
+                        
+                        # Создаем сводную таблицу
+                        summary_data = {}
+                        
+                        # 1. Кол-во клиентов в когорте
+                        summary_data['Кол-во клиентов в когорте'] = {}
+                        for _, row in churn_table.iterrows():
+                            cohort = row['Когорта']
+                            summary_data['Кол-во клиентов в когорте'][cohort] = int(row['Кол-во клиентов когорты'])
+                        
+                        # 2. Накопительное кол-во вернувшихся в категорию
+                        summary_data['Накопительное кол-во вернувшихся в категорию'] = {}
+                        for _, row in churn_table.iterrows():
+                            cohort = row['Когорта']
+                            summary_data['Накопительное кол-во вернувшихся в категорию'][cohort] = int(row['Накопительное кол-во возврата'])
+                        
+                        # 3. Накопительное кол-во вернувшихся в категорию %
+                        summary_data['Накопительное кол-во вернувшихся в категорию %'] = {}
+                        for _, row in churn_table.iterrows():
+                            cohort = row['Когорта']
+                            summary_data['Накопительное кол-во вернувшихся в категорию %'][cohort] = f"{row['Накопительный % возврата']:.1f}%"
+                        
+                        # 4. Отток из категории когорты
+                        summary_data['Отток из категории когорты'] = {}
+                        for _, row in churn_table.iterrows():
+                            cohort = row['Когорта']
+                            summary_data['Отток из категории когорты'][cohort] = int(row['Отток кол-во'])
+                        
+                        # 5. Отток из категории когорты %
+                        summary_data['Отток из категории когорты %'] = {}
+                        for _, row in churn_table.iterrows():
+                            cohort = row['Когорта']
+                            summary_data['Отток из категории когорты %'][cohort] = f"{row['Отток %']:.1f}%"
+                        
+                        # Инициализируем словари для метрик 6-9 заранее (заполняем нулями по умолчанию)
+                        summary_data['Кол-во клиентов когорты в других категориях'] = {}
+                        summary_data['Кол-во клиентов когорты в других категориях %'] = {}
+                        summary_data['Отток из сети'] = {}
+                        summary_data['Отток из сети %'] = {}
+                        
+                        for cohort in sorted_periods:
+                            summary_data['Кол-во клиентов когорты в других категориях'][cohort] = 0
+                            summary_data['Кол-во клиентов когорты в других категориях %'][cohort] = "0.0%"
+                            summary_data['Отток из сети'][cohort] = 0
+                            summary_data['Отток из сети %'][cohort] = "0.0%"
+                        
+                        # 6-9. Данные о присутствии в других категориях и оттоке из сети (если есть данные)
+                        if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
+                            category_summary = st.session_state.category_summary_table
+                            
+                            # 6. Кол-во клиентов когорты в других категориях (обновляем значения)
+                            if 'Итого присутствуют в других категориях' in category_summary.index:
+                                for cohort in sorted_periods:
+                                    if cohort in category_summary.columns:
+                                        value = category_summary.loc['Итого присутствуют в других категориях', cohort]
+                                        summary_data['Кол-во клиентов когорты в других категориях'][cohort] = int(value) if pd.notna(value) else 0
+                                    else:
+                                        summary_data['Кол-во клиентов когорты в других категориях'][cohort] = 0
+                            else:
+                                for cohort in sorted_periods:
+                                    summary_data['Кол-во клиентов когорты в других категориях'][cohort] = 0
+                            
+                            # 7. Кол-во клиентов когорты в других категориях % (обновляем значения)
+                            for cohort in sorted_periods:
+                                cohort_size = summary_data['Кол-во клиентов в когорте'].get(cohort, 0)
+                                present_count = summary_data['Кол-во клиентов когорты в других категориях'].get(cohort, 0)
+                                if cohort_size > 0:
+                                    percent = (present_count / cohort_size) * 100
+                                    summary_data['Кол-во клиентов когорты в других категориях %'][cohort] = f"{percent:.1f}%"
+                                else:
+                                    summary_data['Кол-во клиентов когорты в других категориях %'][cohort] = "0.0%"
+                            
+                            # 8. Отток из сети (обновляем значения)
+                            if 'Отток из сети' in category_summary.index:
+                                for cohort in sorted_periods:
+                                    if cohort in category_summary.columns:
+                                        value = category_summary.loc['Отток из сети', cohort]
+                                        summary_data['Отток из сети'][cohort] = int(value) if pd.notna(value) else 0
+                                    else:
+                                        summary_data['Отток из сети'][cohort] = 0
+                            else:
+                                for cohort in sorted_periods:
+                                    summary_data['Отток из сети'][cohort] = 0
+                            
+                            # 9. Отток из сети % (обновляем значения)
+                            if 'Доля оттока из сети от когорты' in category_summary.index:
+                                for cohort in sorted_periods:
+                                    if cohort in category_summary.columns:
+                                        value = category_summary.loc['Доля оттока из сети от когорты', cohort]
+                                        if pd.notna(value):
+                                            summary_data['Отток из сети %'][cohort] = f"{value:.1f}%"
+                                        else:
+                                            summary_data['Отток из сети %'][cohort] = "0.0%"
+                                    else:
+                                        summary_data['Отток из сети %'][cohort] = "0.0%"
+                            else:
+                                # Если нет строки "Доля оттока из сети от когорты", вычисляем процент вручную
+                                for cohort in sorted_periods:
+                                    cohort_size = summary_data['Кол-во клиентов в когорте'].get(cohort, 0)
+                                    network_churn = summary_data['Отток из сети'].get(cohort, 0)
+                                    if cohort_size > 0:
+                                        percent = (network_churn / cohort_size) * 100
+                                        summary_data['Отток из сети %'][cohort] = f"{percent:.1f}%"
+                                    else:
+                                        summary_data['Отток из сети %'][cohort] = "0.0%"
+                        # Если нет данных о категориях, значения уже заполнены нулями при инициализации выше
+                        
+                        # Создаем DataFrame
+                        summary_df = pd.DataFrame(summary_data, index=sorted_periods).T
+                        
+                        # Отображаем таблицу
+                        st.dataframe(
+                            summary_df,
+                            use_container_width=True
+                        )
+                        
+                        # Добавляем стили для центрирования
+                        st.markdown("""
+                        <style>
+                        div[data-testid="stDataFrame"] table td {
+                            text-align: center !important;
+                        }
+                        div[data-testid="stDataFrame"] table th {
+                            text-align: center !important;
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.info("Загрузите данные для отображения сводной таблицы")
                     
             except Exception as e:
                 st.error(f"❌ Ошибка при построении матрицы: {str(e)}")
