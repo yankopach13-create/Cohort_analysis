@@ -2401,13 +2401,13 @@ if uploaded_file is not None:
                     with col_churn_categories_instructions:
                         # Текст инструкций
                         st.markdown("""
-                        1. Зайдите в Qlik, анализ чеков.
+                        1) Скачайте коды клиентов оттока всех когорт в блоке "Отток клиентов из категории"
                         
-                        2. Отберите анализируемый период и все категории.
+                        2) Примените коды клиентов. Отберите анализируемый период и необходимые категории.
                         
-                        3. Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
+                        3) Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
                         
-                        4. Скачайте документ в Qlik и загрузите в ячейку справа.
+                        4) Скачайте документ в Qlik и загрузите в ячейку справа.
                         """)
                     
                     with col_churn_categories_template:
@@ -2572,28 +2572,29 @@ if uploaded_file is not None:
                                     network_churn_clients = churn_clients_set - all_category_clients
                                     network_churn_clients_list = sorted(list(network_churn_clients))
                                     
-                                    # Выводим метрики в табличном формате
+                                    # Выводим метрики в текстовом формате с цветом
                                     st.markdown("---")
-                                    metrics_data = {
-                                        'Метрика': [
-                                            'Клиентов в когорте',
-                                            'Клиентов когорты присутствуют в других категориях',
-                                            'Отток из сети',
-                                            '% оттока из сети от клиентов когорты'
-                                        ],
-                                        'Значение': [
-                                            cohort_size,
-                                            present_count,
-                                            network_churn,
-                                            f"{network_churn_percent:.1f}%"
-                                        ]
-                                    }
-                                    metrics_df = pd.DataFrame(metrics_data)
-                                    st.dataframe(
-                                        metrics_df,
-                                        use_container_width=True,
-                                        hide_index=True
-                                    )
+                                    metrics_html = f"""
+                                    <div style="line-height: 2;">
+                                    <p style="color: #333; font-size: 1rem; margin: 8px 0;">
+                                        <strong style="color: #1f77b4;">Клиентов в когорте:</strong> 
+                                        <span style="color: #2c3e50; font-weight: 600;">{cohort_size}</span>
+                                    </p>
+                                    <p style="color: #333; font-size: 1rem; margin: 8px 0;">
+                                        <strong style="color: #1f77b4;">Клиентов когорты присутствуют в других категориях:</strong> 
+                                        <span style="color: #2c3e50; font-weight: 600;">{present_count}</span>
+                                    </p>
+                                    <p style="color: #333; font-size: 1rem; margin: 8px 0;">
+                                        <strong style="color: #1f77b4;">Отток из сети:</strong> 
+                                        <span style="color: #e74c3c; font-weight: 600;">{network_churn}</span>
+                                    </p>
+                                    <p style="color: #333; font-size: 1rem; margin: 8px 0;">
+                                        <strong style="color: #1f77b4;">% оттока из сети от клиентов когорты:</strong> 
+                                        <span style="color: #e74c3c; font-weight: 600;">{network_churn_percent:.1f}%</span>
+                                    </p>
+                                    </div>
+                                    """
+                                    st.markdown(metrics_html, unsafe_allow_html=True)
                                     
                                     # Кнопка скачивания кодов клиентов оттока из сети
                                     if network_churn_clients_list:
