@@ -2662,6 +2662,10 @@ if uploaded_file is not None:
                                     new_index = ['Итого клиентов'] + [cat for cat in categories]
                                     category_period_table_with_totals = category_period_table_with_totals.reindex(new_index)
                                     
+                                    # Переупорядочиваем столбцы: итоговый столбец слева (после индекса, перед периодами)
+                                    new_columns = ['Итого'] + list(sorted_periods)
+                                    category_period_table_with_totals = category_period_table_with_totals[new_columns]
+                                    
                                     # Отображаем основную таблицу с итогами
                                     st.dataframe(
                                         category_period_table_with_totals,
@@ -2678,18 +2682,47 @@ if uploaded_file is not None:
                                         text-align: center !important;
                                     }
                                     /* Выделяем первую строку (итоговая строка "Итого клиентов") жирным */
-                                    div[data-testid="stDataFrame"] table tbody tr:first-child td {
+                                    div[data-testid="stDataFrame"] table tbody tr:first-child td,
+                                    div[data-testid="stDataFrame"] table tbody tr:first-child th {
                                         font-weight: bold !important;
                                     }
-                                    /* Выделяем последний столбец (итоговый столбец "Итого") жирным */
-                                    div[data-testid="stDataFrame"] table tbody td:last-child {
+                                    /* Выделяем первый столбец данных (итоговый столбец "Итого") жирным */
+                                    div[data-testid="stDataFrame"] table tbody td:first-of-type,
+                                    div[data-testid="stDataFrame"] table thead th:first-of-type {
                                         font-weight: bold !important;
                                     }
-                                    /* Выделяем заголовок итогового столбца жирным */
-                                    div[data-testid="stDataFrame"] table thead th:last-child {
+                                    /* Альтернативный способ через nth-child для первого столбца данных */
+                                    div[data-testid="stDataFrame"] table tbody tr td:nth-child(2),
+                                    div[data-testid="stDataFrame"] table thead tr th:nth-child(2) {
                                         font-weight: bold !important;
                                     }
                                     </style>
+                                    <script>
+                                    // Дополнительный скрипт для гарантированного выделения жирным
+                                    setTimeout(function() {
+                                        const tables = document.querySelectorAll('div[data-testid="stDataFrame"] table');
+                                        tables.forEach(table => {
+                                            // Первая строка (итоговая)
+                                            const firstRow = table.querySelector('tbody tr:first-child');
+                                            if (firstRow) {
+                                                firstRow.querySelectorAll('td, th').forEach(cell => {
+                                                    cell.style.fontWeight = 'bold';
+                                                });
+                                            }
+                                            // Первый столбец данных (итоговый)
+                                            table.querySelectorAll('tbody tr').forEach(row => {
+                                                const firstDataCell = row.querySelector('td:nth-child(2)');
+                                                if (firstDataCell) {
+                                                    firstDataCell.style.fontWeight = 'bold';
+                                                }
+                                            });
+                                            const firstHeader = table.querySelector('thead th:nth-child(2)');
+                                            if (firstHeader) {
+                                                firstHeader.style.fontWeight = 'bold';
+                                            }
+                                        });
+                                    }, 100);
+                                    </script>
                                     """, unsafe_allow_html=True)
                                 
                         except Exception as e:
