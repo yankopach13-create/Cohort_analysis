@@ -1064,7 +1064,7 @@ def build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix):
 col_header_left, col_header_right = st.columns([1, 1])
 
 with col_header_left:
-    st.header("Когортный анализ")
+    st.header("📊 Когортный анализ")
 
 with col_header_right:
     st.subheader("📋 Шаблон загрузки данных из Qlik")
@@ -2372,7 +2372,7 @@ if uploaded_file is not None:
                     col_churn_title_left, col_churn_title_right = st.columns([1, 1])
                     
                     with col_churn_title_left:
-                        st.subheader("🔍 Присутствие клиентов оттока в других категориях")
+                        st.subheader("🔍 Присутствие клиентов оттока в других категориях и отток из сети")
                     
                     with col_churn_title_right:
                         st.subheader("📋 Шаблон загрузки данных из Qlik")
