@@ -1072,24 +1072,8 @@ with col_header_right:
 # Блок шаблона Qlik - инструкции слева, изображение и загрузчик справа
 col_template_instructions, col_template_image = st.columns([1, 1])
 
-with col_template_instructions:
-    # Текст инструкций
-    st.markdown("""
-    1. Зайдите в Qlik, анализ чеков.
-    
-    2. Отберите необходимую категорию и уровни товара.
-    
-    3. Отберите анализируемый период.
-    
-    4. Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
-    
-    Настройте фильтрами построение динамики когорт: Год-Месяц или Год-Неделя.
-    
-    5. Скачайте документ в Qlik и загрузите в ячейку справа.
-    """)
-
 with col_template_image:
-    # Пытаемся найти скриншот шаблона Qlik
+    # Пытаемся найти скриншот шаблона Qlik (изображение вверху)
     qlik_image_paths = [
         'Qlik.png',
         'Qlik.jpg',
@@ -1113,12 +1097,28 @@ with col_template_image:
     if not image_found:
         st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: Qlik.png, qlik_template.png, шаблон_qlik.png или qlik.png")
     
-    # Загрузчик Excel файла прямо под картинкой (занимает половину ширины)
+    # Загрузчик Excel файла прямо под изображением
     uploaded_file = st.file_uploader(
         "Выберите Excel файл для загрузки",
         type=['xlsx', 'xls'],
         help="Поддерживаются файлы формата .xlsx и .xls"
     )
+
+with col_template_instructions:
+    # Текст инструкций
+    st.markdown("""
+    1. Зайдите в Qlik, анализ чеков.
+    
+    2. Отберите необходимую категорию и уровни товара.
+    
+    3. Отберите анализируемый период.
+    
+    4. Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
+    
+    Настройте фильтрами построение динамики когорт: Год-Месяц или Год-Неделя.
+    
+    5. Скачайте документ в Qlik и загрузите в ячейку справа.
+    """)
 
 if uploaded_file is not None:
     try:
@@ -2571,6 +2571,10 @@ if uploaded_file is not None:
                                     # % оттока из сети
                                     network_churn_percent = (network_churn / cohort_size * 100) if cohort_size > 0 else 0
                                     
+                                    # Вычисляем клиентов оттока из сети (тех, кто не присутствует ни в одной категории)
+                                    network_churn_clients = churn_clients_set - all_category_clients
+                                    network_churn_clients_list = sorted(list(network_churn_clients))
+                                    
                                     # Выводим метрики компактно
                                     st.markdown("---")
                                     metrics_text = f"""
@@ -2580,6 +2584,20 @@ if uploaded_file is not None:
                                     **% оттока из сети от клиентов когорты:** {network_churn_percent:.1f}%
                                     """
                                     st.markdown(metrics_text)
+                                    
+                                    # Кнопка скачивания кодов клиентов оттока из сети
+                                    if network_churn_clients_list:
+                                        network_churn_clients_csv = "\n".join([str(client) for client in network_churn_clients_list])
+                                        st.download_button(
+                                            label=f"💾 Скачать коды клиентов оттока из сети ({len(network_churn_clients_list)})",
+                                            data=network_churn_clients_csv,
+                                            file_name=f"отток_из_сети_когорта_{selected_cohort}.txt",
+                                            mime="text/plain",
+                                            use_container_width=True,
+                                            key=f"download_network_churn_{selected_cohort}"
+                                        )
+                                    else:
+                                        st.info("ℹ️ Отток из сети равен 0 или все клиенты оттока присутствуют в других категориях")
                                 
                                 with col_table:
                                     # Создаем таблицу: категории по строкам, периоды по столбцам
@@ -2675,7 +2693,7 @@ if uploaded_file is not None:
                                         use_container_width=True
                                     )
                                     
-                                    # Добавляем стили для центрирования, выделения итоговых значений жирным и пастельным цветом
+                                    # Добавляем стили для центрирования, выделения итоговых значений жирным, пастельным цветом и закрепления
                                     st.markdown("""
                                     <style>
                                     div[data-testid="stDataFrame"] table td {
@@ -2684,44 +2702,66 @@ if uploaded_file is not None:
                                     div[data-testid="stDataFrame"] table th {
                                         text-align: center !important;
                                     }
-                                    /* Выделяем первую строку (итоговая строка "Итого клиентов") жирным и пастельным цветом */
+                                    /* Закрепляем первую строку (итоговая строка "Итого клиентов") сверху */
                                     div[data-testid="stDataFrame"] table tbody tr:first-child td,
                                     div[data-testid="stDataFrame"] table tbody tr:first-child th {
                                         font-weight: bold !important;
                                         background-color: #E3F2FD !important;
+                                        position: sticky !important;
+                                        top: 0 !important;
+                                        z-index: 10 !important;
                                     }
-                                    /* Выделяем первый столбец данных (итоговый столбец "Итого") жирным и пастельным цветом */
+                                    /* Закрепляем первый столбец данных (итоговый столбец "Итого") слева */
                                     div[data-testid="stDataFrame"] table tbody tr td:nth-child(2),
                                     div[data-testid="stDataFrame"] table thead tr th:nth-child(2) {
                                         font-weight: bold !important;
                                         background-color: #E3F2FD !important;
+                                        position: sticky !important;
+                                        left: 0 !important;
+                                        z-index: 5 !important;
                                     }
-                                    /* Выделяем ячейку пересечения итоговых строки и столбца */
+                                    /* Закрепляем ячейку пересечения итоговых строки и столбца (и сверху, и слева) */
                                     div[data-testid="stDataFrame"] table tbody tr:first-child td:nth-child(2) {
                                         background-color: #BBDEFB !important;
                                         font-weight: bold !important;
+                                        position: sticky !important;
+                                        top: 0 !important;
+                                        left: 0 !important;
+                                        z-index: 15 !important;
+                                    }
+                                    /* Закрепляем заголовок итогового столбца */
+                                    div[data-testid="stDataFrame"] table thead tr th:nth-child(2) {
+                                        position: sticky !important;
+                                        left: 0 !important;
+                                        z-index: 6 !important;
                                     }
                                     </style>
                                     <script>
-                                    // Дополнительный скрипт для гарантированного выделения жирным и цветом
+                                    // Дополнительный скрипт для гарантированного выделения жирным, цветом и закрепления
                                     setTimeout(function() {
                                         const tables = document.querySelectorAll('div[data-testid="stDataFrame"] table');
                                         tables.forEach(table => {
-                                            // Первая строка (итоговая)
+                                            // Первая строка (итоговая) - закрепляем сверху
                                             const firstRow = table.querySelector('tbody tr:first-child');
                                             if (firstRow) {
                                                 firstRow.querySelectorAll('td, th').forEach(cell => {
                                                     cell.style.fontWeight = 'bold';
+                                                    cell.style.position = 'sticky';
+                                                    cell.style.top = '0';
+                                                    cell.style.zIndex = '10';
                                                     if (!cell.style.backgroundColor || cell.style.backgroundColor === '') {
                                                         cell.style.backgroundColor = '#E3F2FD';
                                                     }
                                                 });
                                             }
-                                            // Первый столбец данных (итоговый)
+                                            // Первый столбец данных (итоговый) - закрепляем слева
                                             table.querySelectorAll('tbody tr').forEach(row => {
                                                 const firstDataCell = row.querySelector('td:nth-child(2)');
                                                 if (firstDataCell) {
                                                     firstDataCell.style.fontWeight = 'bold';
+                                                    firstDataCell.style.position = 'sticky';
+                                                    firstDataCell.style.left = '0';
+                                                    firstDataCell.style.zIndex = '5';
                                                     if (!firstDataCell.style.backgroundColor || firstDataCell.style.backgroundColor === '') {
                                                         firstDataCell.style.backgroundColor = '#E3F2FD';
                                                     }
@@ -2731,11 +2771,18 @@ if uploaded_file is not None:
                                             if (firstHeader) {
                                                 firstHeader.style.fontWeight = 'bold';
                                                 firstHeader.style.backgroundColor = '#E3F2FD';
+                                                firstHeader.style.position = 'sticky';
+                                                firstHeader.style.left = '0';
+                                                firstHeader.style.zIndex = '6';
                                             }
-                                            // Ячейка пересечения
+                                            // Ячейка пересечения - закрепляем и сверху, и слева
                                             const intersectionCell = table.querySelector('tbody tr:first-child td:nth-child(2)');
                                             if (intersectionCell) {
                                                 intersectionCell.style.backgroundColor = '#BBDEFB';
+                                                intersectionCell.style.position = 'sticky';
+                                                intersectionCell.style.top = '0';
+                                                intersectionCell.style.left = '0';
+                                                intersectionCell.style.zIndex = '15';
                                             }
                                         });
                                     }, 100);
