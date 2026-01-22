@@ -1452,6 +1452,59 @@ if uploaded_file is not None:
                                     start_row_cohorts = 0
                                     worksheet_cohorts = None
                                     
+                                    # Добавляем данные с листа 6 (если есть)
+                                    if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
+                                        summary_table_excel = st.session_state.category_summary_table.copy()
+                                        summary_table_excel.index.name = 'Метрика / Когорта'
+                                        summary_table_excel.to_excel(writer, sheet_name="7. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
+                                        worksheet_cohorts = writer.sheets["7. Присутствие когорты в других категориях"]
+                                        
+                                        # Форматируем верхнюю таблицу
+                                        for row_idx in range(start_row_cohorts + 2, start_row_cohorts + len(summary_table_excel.index) + 2):
+                                            for col_idx in range(2, len(summary_table_excel.columns) + 2):
+                                                cell = worksheet_cohorts.cell(row=row_idx, column=col_idx)
+                                                cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
+                                                row_name = summary_table_excel.index[row_idx - start_row_cohorts - 2]
+                                                
+                                                if cell.value is not None and not isinstance(cell.value, str):
+                                                    if row_name == 'Доля оттока из сети от когорты':
+                                                        cell.value = float(cell.value) / 100.0
+                                                        cell.number_format = '0.0%'
+                                                    else:
+                                                        cell.number_format = '0'
+                                        
+                                        # Форматируем заголовок строки
+                                        for row_idx in range(start_row_cohorts + 2, start_row_cohorts + len(summary_table_excel.index) + 2):
+                                            cell = worksheet_cohorts.cell(row=row_idx, column=1)
+                                            cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
+                                        
+                                        start_row_cohorts = start_row_cohorts + len(summary_table_excel.index) + 3
+                                    
+                                    if 'category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None:
+                                        category_table_excel = st.session_state.category_cohort_table.copy()
+                                        category_table_excel.index.name = 'Категория / Когорта'
+                                        
+                                        if worksheet_cohorts is None:
+                                            category_table_excel.to_excel(writer, sheet_name="7. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
+                                            worksheet_cohorts = writer.sheets["7. Присутствие когорты в других категориях"]
+                                        else:
+                                            category_table_excel.to_excel(writer, sheet_name="7. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
+                                        
+                                        # Форматируем таблицу с категориями
+                                        for row_idx in range(start_row_cohorts + 2, start_row_cohorts + len(category_table_excel.index) + 2):
+                                            for col_idx in range(2, len(category_table_excel.columns) + 2):
+                                                cell = worksheet_cohorts.cell(row=row_idx, column=col_idx)
+                                                cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
+                                                if cell.value is not None and not isinstance(cell.value, str):
+                                                    cell.number_format = '0'
+                                        
+                                        # Форматируем заголовок строки
+                                        for row_idx in range(start_row_cohorts + 2, start_row_cohorts + len(category_table_excel.index) + 2):
+                                            cell = worksheet_cohorts.cell(row=row_idx, column=1)
+                                            cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
+                                        
+                                        start_row_cohorts = start_row_cohorts + len(category_table_excel.index) + 3
+                                    
                                     # Для каждой когорты создаем таблицу
                                     for cohort_idx, selected_cohort in enumerate(sorted_periods):
                                         # Определяем периоды начиная с выбранной когорты
@@ -1738,12 +1791,19 @@ if uploaded_file is not None:
                         col_excel_button, col_pdf_button = st.columns(2)
                         
                         # Генерируем файл каждый раз при рендеринге (данные могут обновиться)
-                        # Используем сохранённый файл из session_state, если он есть (после загрузки категорий)
-                        if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
-                            excel_data_full = st.session_state.excel_report_data
-                        else:
-                            # Генерируем файл (данные категорий ещё не загружены)
+                        # Всегда генерируем отчет заново, чтобы включить все актуальные данные
+                        try:
                             excel_data_full = create_full_report_excel()
+                            # Сохраняем для возможного использования в будущем
+                            st.session_state.excel_report_data = excel_data_full
+                        except Exception as e:
+                            # Если ошибка, используем сохраненный файл как fallback
+                            if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
+                                excel_data_full = st.session_state.excel_report_data
+                                st.warning(f"Использован сохраненный отчет. Ошибка при генерации: {str(e)}")
+                            else:
+                                st.error(f"Ошибка при генерации отчета: {str(e)}")
+                                excel_data_full = b""  # Пустой файл
                         
                         with col_excel_button:
                             st.download_button(
@@ -2848,11 +2908,15 @@ if uploaded_file is not None:
                                 st.session_state.category_summary_table = summary_table_excel
                                 st.session_state.category_cohort_table = None
                                 
-                                # Обновляем Excel отчёт (очищаем старые данные)
+                                # Обновляем Excel отчёт после сохранения всех данных
                                 if 'excel_report_cache_key' in st.session_state:
                                     del st.session_state.excel_report_cache_key
                                 
+                                # Перегенерируем Excel отчёт после сохранения данных о категориях
+                                # Используем st.rerun() для обновления, но только если данные изменились
+                                # Вместо этого просто перегенерируем отчет
                                 try:
+                                    # Небольшая задержка для гарантии сохранения данных
                                     st.session_state.excel_report_data = create_full_report_excel()
                                 except Exception as e:
                                     st.warning(f"Не удалось обновить Excel отчёт: {str(e)}")
