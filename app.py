@@ -1064,7 +1064,7 @@ def build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix):
 col_header_left, col_header_right = st.columns([1, 1])
 
 with col_header_left:
-    st.header("📁 Загрузка данных")
+    st.header("Когортный анализ")
 
 with col_header_right:
     st.subheader("📋 Шаблон загрузки данных из Qlik")
@@ -1085,7 +1085,7 @@ with col_template_instructions:
     
     Настройте фильтрами построение динамики когорт: Год-Месяц или Год-Неделя.
     
-    5. Скачайте документ в Qlik и загрузите в ячейку снизу.
+    5. Скачайте документ в Qlik и загрузите в ячейку справа.
     """)
 
 with col_template_image:
@@ -1897,8 +1897,8 @@ if uploaded_file is not None:
                     }
                     
                     .stRadio > div > label {
-                        background: linear-gradient(135deg, #e0d5f5 0%, #d4c5f0 100%) !important;
-                        color: #5a4fcf !important;
+                        background: white !important;
+                        color: #333 !important;
                         padding: 12px 8px !important;
                         border-radius: 8px !important;
                         margin: 0 !important;
@@ -1906,7 +1906,7 @@ if uploaded_file is not None:
                         font-size: 0.75rem !important;
                         line-height: 1.2 !important;
                         transition: all 0.3s ease !important;
-                        border: 2px solid rgba(90, 79, 207, 0.3) !important;
+                        border: 2px solid #ccc !important;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
                         cursor: pointer !important;
                         text-align: center !important;
@@ -1926,20 +1926,20 @@ if uploaded_file is not None:
                     .stRadio > div > label:hover {
                         transform: translateY(-2px) !important;
                         box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-                        background: linear-gradient(135deg, #d4c5f0 0%, #c8b5eb 100%) !important;
-                        border-color: rgba(90, 79, 207, 0.5) !important;
+                        background: #f5f5f5 !important;
+                        border-color: #999 !important;
                     }
                     
                     .stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                        color: white !important;
-                        border-color: rgba(102, 126, 234, 0.8) !important;
-                        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4) !important;
+                        background: white !important;
+                        color: #333 !important;
+                        border-color: #666 !important;
+                        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
                     }
                     
                     .stRadio input[type="radio"]:checked + label {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                        color: white !important;
+                        background: white !important;
+                        color: #333 !important;
                     }
                     
                     /* Стили для таблицы - только базовое оформление, не мешаем встроенному тулбару */
@@ -1987,11 +1987,11 @@ if uploaded_file is not None:
                         gap: 10px !important;
                     }
                     
-                    /* Стили для кнопок Excel и PDF - менее яркие цвета с большим шрифтом */
+                    /* Стили для кнопок Excel и PDF - светлые белые с большим шрифтом */
                     div[data-testid="stDownloadButton"] button,
                     div[data-testid="stButton"] button {
-                        background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%) !important;
-                        color: white !important;
+                        background: #f8f9fa !important;
+                        color: #333 !important;
                         padding: 15px 20px !important;
                         border-radius: 8px !important;
                         margin: 0 !important;
@@ -1999,8 +1999,8 @@ if uploaded_file is not None:
                         font-size: 1.1rem !important;
                         line-height: 1.3 !important;
                         transition: all 0.3s ease !important;
-                        border: 2px solid rgba(149, 165, 166, 0.4) !important;
-                        box-shadow: 0 2px 4px rgba(149, 165, 166, 0.2) !important;
+                        border: 2px solid #e0e0e0 !important;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
                         cursor: pointer !important;
                         text-align: center !important;
                         min-height: 60px !important;
@@ -2016,14 +2016,15 @@ if uploaded_file is not None:
                     div[data-testid="stDownloadButton"] button:hover,
                     div[data-testid="stButton"] button:hover {
                         transform: translateY(-2px) !important;
-                        box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3) !important;
-                        background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%) !important;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+                        background: #ffffff !important;
+                        border-color: #d0d0d0 !important;
                     }
                     
                     div[data-testid="stDownloadButton"] button:active,
                     div[data-testid="stButton"] button:active {
                         transform: translateY(0) !important;
-                        box-shadow: 0 2px 4px rgba(149, 165, 166, 0.2) !important;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
@@ -2193,7 +2194,7 @@ if uploaded_file is not None:
                     
                     with col_clients:
                         # Компактный блок кодов клиентов
-                        st.markdown('<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 10px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: white; margin: 0;">👥 Коды клиентов</h4></div>', unsafe_allow_html=True)
+                        st.markdown('<div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 2px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><h4 style="color: #333; margin: 0;">👥 Коды клиентов</h4></div>', unsafe_allow_html=True)
                         
                         # Коды клиентов в зависимости от выбранного типа
                         if view_key == "cohort":
@@ -2388,7 +2389,7 @@ if uploaded_file is not None:
                         
                         3. Зайдите на лист "Конструктор" и выведите отчёт по шаблону справа.
                         
-                        4. Скачайте документ в Qlik и загрузите в ячейку снизу.
+                        4. Скачайте документ в Qlik и загрузите в ячейку справа.
                         """)
                     
                     with col_churn_categories_template:
