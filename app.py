@@ -1070,7 +1070,7 @@ with col_header_right:
     st.subheader("📋 Шаблон загрузки данных из Qlik")
 
 # Блок шаблона Qlik - инструкции слева, изображение и загрузчик справа
-col_template_instructions, col_template_right = st.columns([1, 1])
+col_template_instructions, col_template_image = st.columns([1, 1])
 
 with col_template_instructions:
     # Текст инструкций
@@ -1085,10 +1085,10 @@ with col_template_instructions:
     
     Настройте фильтрами построение динамики когорт: Год-Месяц или Год-Неделя.
     
-    5. Скачайте документ в Qlik и загрузите в ячейку справа.
+    5. Скачайте документ в Qlik и загрузите в ячейку снизу.
     """)
 
-with col_template_right:
+with col_template_image:
     # Пытаемся найти скриншот шаблона Qlik
     qlik_image_paths = [
         'Qlik.png',
@@ -1113,7 +1113,7 @@ with col_template_right:
     if not image_found:
         st.info("📸 Поместите скриншот шаблона загрузки данных из Qlik в папку проекта с одним из имён: Qlik.png, qlik_template.png, шаблон_qlik.png или qlik.png")
     
-    # Загрузчик Excel файла справа
+    # Загрузчик Excel файла прямо под картинкой (занимает половину ширины)
     uploaded_file = st.file_uploader(
         "Выберите Excel файл для загрузки",
         type=['xlsx', 'xls'],
@@ -1289,203 +1289,23 @@ if uploaded_file is not None:
                 # Получаем информацию из session state
                 info = st.session_state.cohort_info
                 
-                # Отображение матрицы (только если данные готовы)
+                # Отображаем кнопки скачивания под блоком загрузки (горизонтально)
                 if info:
-                    # Уменьшаем отступ перед блоком матриц
-                    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
-                    
-                    # Добавляем CSS для компактного отображения таблицы без прокрутки
-                    st.markdown("""
-                    <style>
-                    div[data-testid="stDataFrame"] > div {
-                        overflow: visible !important;
-                    }
-                    div[data-testid="stDataFrame"] table {
-                        font-size: 0.7rem !important;
-                        width: 100% !important;
-                    }
-                    /* Убираем overflow с внутренних контейнеров таблицы */
-                    div[data-testid="stDataFrame"] > div > div {
-                        overflow: visible !important;
-                    }
-                    div[data-testid="stDataFrame"] th, 
-                    div[data-testid="stDataFrame"] td {
-                        padding: 0.2rem 0.4rem !important;
-                        font-size: 0.7rem !important;
-                        white-space: nowrap !important;
-                        text-align: center !important;
-                    }
-                    div[data-testid="stDataFrame"] table th,
-                    div[data-testid="stDataFrame"] table td {
-                        text-align: center !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    # Объединенный блок с переключателем отображения
-                    # CSS стили для красивого оформления блока
-                    st.markdown("""
-                    <style>
-                    /* Стили для блока с таблицей */
-                    .matrix-block-container {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        padding: 20px;
-                        border-radius: 15px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                        margin-bottom: 20px;
-                    }
-                    
-                    /* Стили для кнопок переключения */
-                    .stRadio > div {
-                        background: transparent;
-                        padding: 0;
-                        border-radius: 0;
-                        box-shadow: none;
-                        border: none;
-                        display: flex;
-                        flex-direction: row;
-                        gap: 10px;
-                        align-items: stretch;
-                    }
-                    
-                    .stRadio > div > label {
-                        background: linear-gradient(135deg, #e0d5f5 0%, #d4c5f0 100%) !important;
-                        color: #5a4fcf !important;
-                        padding: 12px 8px !important;
-                        border-radius: 8px !important;
-                        margin: 0 !important;
-                        font-weight: 700 !important;
-                        font-size: 0.75rem !important;
-                        line-height: 1.2 !important;
-                        transition: all 0.3s ease !important;
-                        border: 2px solid rgba(90, 79, 207, 0.3) !important;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-                        cursor: pointer !important;
-                        text-align: center !important;
-                        flex: 1 1 0 !important;
-                        min-width: 0 !important;
-                        min-height: 50px !important;
-                        height: auto !important;
-                        max-height: 60px !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        white-space: normal !important;
-                        word-wrap: break-word !important;
-                        overflow: hidden !important;
-                    }
-                    
-                    .stRadio > div > label:hover {
-                        transform: translateY(-2px) !important;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-                        background: linear-gradient(135deg, #d4c5f0 0%, #c8b5eb 100%) !important;
-                        border-color: rgba(90, 79, 207, 0.5) !important;
-                    }
-                    
-                    .stRadio > div > label[data-baseweb="radio"]:has(input:checked) {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                        color: white !important;
-                        border-color: rgba(102, 126, 234, 0.8) !important;
-                        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4) !important;
-                    }
-                    
-                    .stRadio input[type="radio"]:checked + label {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                        color: white !important;
-                    }
-                    
-                    /* Стили для таблицы - только базовое оформление, не мешаем встроенному тулбару */
-                    div[data-testid="stDataFrame"] {
-                        background: white;
-                        border-radius: 10px;
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                        max-width: 100% !important;
-                    }
-                    
-                    /* Стили для блока кодов клиентов */
-                    .clients-block {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        padding: 15px;
-                        border-radius: 10px;
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    }
-                    
-                    /* Стили для описания */
-                    .description-block {
-                        background: transparent;
-                        padding: 15px;
-                        border-radius: 10px;
-                        margin-bottom: 15px;
-                        box-shadow: none;
-                        color: inherit;
-                    }
-                    
-                    /* Контейнер для кнопок - ограничиваем ширину как у описания */
-                    .stRadio {
-                        max-width: 100%;
-                    }
-                    
-                    /* Ограничиваем ширину контейнера кнопок и растягиваем на всю ширину */
-                    div[data-testid="stRadio"] {
-                        max-width: 100% !important;
-                        width: 100% !important;
-                    }
-                    
-                    /* Растягиваем контейнер с кнопками на всю ширину колонки */
-                    .stRadio > div {
-                        width: 100% !important;
-                        display: flex !important;
-                        flex-direction: row !important;
-                        gap: 10px !important;
-                    }
-                    
-                    /* Стили для кнопок Excel и PDF - белые с большим шрифтом */
-                    div[data-testid="stDownloadButton"] button,
-                    div[data-testid="stButton"] button {
-                        background: white !important;
-                        color: #333 !important;
-                        padding: 15px 20px !important;
-                        border-radius: 8px !important;
-                        margin: 0 !important;
-                        font-weight: 700 !important;
-                        font-size: 2.2rem !important;
-                        line-height: 1.3 !important;
-                        transition: all 0.3s ease !important;
-                        border: 2px solid #ccc !important;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-                        cursor: pointer !important;
-                        text-align: center !important;
-                        min-height: 60px !important;
-                        height: auto !important;
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        white-space: normal !important;
-                        word-wrap: break-word !important;
-                        width: 100% !important;
-                    }
-                    
-                    div[data-testid="stDownloadButton"] button:hover,
-                    div[data-testid="stButton"] button:hover {
-                        transform: translateY(-2px) !important;
-                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-                        background: #f5f5f5 !important;
-                    }
-                    
-                    div[data-testid="stDownloadButton"] button:active,
-                    div[data-testid="stButton"] button:active {
-                        transform: translateY(0) !important;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    # Создаем колонки для выравнивания кнопок с блоком описания
-                    # Кнопки занимают всю ширину до блока кодов клиентов (соотношение 4:1 как у таблицы)
-                    col_buttons_container, col_empty = st.columns([4, 1])
-                    
-                    with col_buttons_container:
-                        # Переключатель для выбора типа отображения (горизонтально, на уровне с таблицей)
+                        # Создаем функцию для генерации полного отчёта
+                        def create_full_report_excel():
+                            """Создает полный Excel отчёт со всеми таблицами"""
+                            buffer = io.BytesIO()
+                            
+                            # Получаем данные из session state
+                            cohort_matrix = st.session_state.cohort_matrix
+                            sorted_periods = st.session_state.sorted_periods
+                        
+                            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                                workbook = writer.book
+                                
+                                # Получаем все матрицы
+                                accumulation_matrix = build_accumulation_matrix(df, year_month_col, client_col, sorted_periods)
+                                accumulation_percent_matrix = build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix)
                                 inflow_matrix = build_inflow_matrix(accumulation_percent_matrix)
                                 
                                 # Таблица 1: Динамика уникальных клиентов когорт
@@ -1617,24 +1437,21 @@ if uploaded_file is not None:
                                 # Удаляем пустой лист по умолчанию
                                 if 'Sheet' in workbook.sheetnames:
                                     workbook.remove(workbook['Sheet'])
-                        
-                        buffer.seek(0)
-                        return buffer.getvalue()
+                            
+                            buffer.seek(0)
+                            return buffer.getvalue()
                         
                         # CSS для увеличения размера кнопок загрузки
                         st.markdown("""
                         <style>
                         div[data-testid="stDownloadButton"] > button {
                             height: 60px !important;
-                            font-size: 40px !important;
+                            font-size: 20px !important;
                             font-weight: bold !important;
                             padding: 15px 30px !important;
-                            background: white !important;
-                            color: #333 !important;
-                            border: 2px solid #ccc !important;
                         }
                         div[data-testid="stDownloadButton"] > button > div > p {
-                            font-size: 40px !important;
+                            font-size: 20px !important;
                             font-weight: bold !important;
                         }
                         </style>
@@ -2170,20 +1987,20 @@ if uploaded_file is not None:
                         gap: 10px !important;
                     }
                     
-                    /* Стили для кнопок Excel и PDF - белые с большим шрифтом */
+                    /* Стили для кнопок Excel и PDF - менее яркие цвета с большим шрифтом */
                     div[data-testid="stDownloadButton"] button,
                     div[data-testid="stButton"] button {
-                        background: white !important;
-                        color: #333 !important;
+                        background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%) !important;
+                        color: white !important;
                         padding: 15px 20px !important;
                         border-radius: 8px !important;
                         margin: 0 !important;
                         font-weight: 700 !important;
-                        font-size: 2.2rem !important;
+                        font-size: 1.1rem !important;
                         line-height: 1.3 !important;
                         transition: all 0.3s ease !important;
-                        border: 2px solid #ccc !important;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+                        border: 2px solid rgba(149, 165, 166, 0.4) !important;
+                        box-shadow: 0 2px 4px rgba(149, 165, 166, 0.2) !important;
                         cursor: pointer !important;
                         text-align: center !important;
                         min-height: 60px !important;
@@ -2199,14 +2016,14 @@ if uploaded_file is not None:
                     div[data-testid="stDownloadButton"] button:hover,
                     div[data-testid="stButton"] button:hover {
                         transform: translateY(-2px) !important;
-                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-                        background: #f5f5f5 !important;
+                        box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3) !important;
+                        background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%) !important;
                     }
                     
                     div[data-testid="stDownloadButton"] button:active,
                     div[data-testid="stButton"] button:active {
                         transform: translateY(0) !important;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+                        box-shadow: 0 2px 4px rgba(149, 165, 166, 0.2) !important;
                     }
                     </style>
                     """, unsafe_allow_html=True)
@@ -2546,557 +2363,6 @@ if uploaded_file is not None:
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
-                    
-                    # Отображаем кнопки скачивания после всех матриц
-                    st.markdown("---")
-                    st.subheader("📥 Скачать отчёты")
-                    
-                    # Создаем функцию для генерации полного отчёта
-                    def create_full_report_excel():
-                        """Создает полный Excel отчёт со всеми таблицами"""
-                        buffer = io.BytesIO()
-                        
-                        # Получаем данные из session state
-                        cohort_matrix = st.session_state.cohort_matrix
-                        sorted_periods = st.session_state.sorted_periods
-                    
-                        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                            workbook = writer.book
-                            
-                            # Получаем все матрицы
-                            accumulation_matrix = build_accumulation_matrix(df, year_month_col, client_col, sorted_periods)
-                            accumulation_percent_matrix = build_accumulation_percent_matrix(accumulation_matrix, cohort_matrix)
-                            inflow_matrix = build_inflow_matrix(accumulation_percent_matrix)
-                            
-                            # Таблица 1: Динамика уникальных клиентов когорт
-                            cohort_matrix_copy = cohort_matrix.copy()
-                            cohort_matrix_copy.index.name = 'Когорта / Период'
-                            cohort_matrix_copy.to_excel(writer, sheet_name="1. Динамика уникальных клиентов", startrow=0, index=True)
-                            worksheet1 = writer.sheets["1. Динамика уникальных клиентов"]
-                            # Используем специальное форматирование с горизонтальной динамикой
-                            apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods)
-                            
-                            # Таблица 2: Динамика накопления возврата
-                            accumulation_matrix_copy = accumulation_matrix.copy()
-                            accumulation_matrix_copy.index.name = 'Когорта / Период'
-                            accumulation_matrix_copy.to_excel(writer, sheet_name="2. Динамика накопления", startrow=0, index=True)
-                            worksheet2 = writer.sheets["2. Динамика накопления"]
-                            # Применяем форматирование со скрытием нулевых значений
-                            apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True)
-                            # Форматируем значения как целые числа (только для непустых ячеек)
-                            for row_idx in range(2, len(accumulation_matrix.index) + 2):
-                                for col_idx in range(2, len(accumulation_matrix.columns) + 2):
-                                    cell = worksheet2.cell(row=row_idx, column=col_idx)
-                                    if cell.value is not None and not isinstance(cell.value, str) and cell.value != "":
-                                        cell.number_format = '0'  # Формат целого числа
-                            
-                            # Таблица 3: Динамика накопления возврата в %
-                            accumulation_percent_matrix_copy = accumulation_percent_matrix.copy()
-                            accumulation_percent_matrix_copy.index.name = 'Когорта / Период'
-                            accumulation_percent_matrix_copy.to_excel(writer, sheet_name="3. Динамика накопления %", startrow=0, index=True)
-                            worksheet3 = writer.sheets["3. Динамика накопления %"]
-                            # Используем специальное форматирование для процентов
-                            apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods)
-                            
-                            # Таблица 4: Приток возврата в %
-                            inflow_matrix_copy = inflow_matrix.copy()
-                            inflow_matrix_copy.index.name = 'Когорта / Период'
-                            inflow_matrix_copy.to_excel(writer, sheet_name="4. Приток возврата %", startrow=0, index=True)
-                            worksheet4 = writer.sheets["4. Приток возврата %"]
-                            # Используем специальное форматирование для процентов притока
-                            apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods)
-                            
-                            # Таблица 5: Отток клиентов из категории
-                            churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix)
-                            churn_table_copy = churn_table_full.copy()
-                            # Не конвертируем проценты в строки - сохраняем как числа для возможности расчетов
-                            churn_table_copy.to_excel(writer, sheet_name="5. Отток клиентов из категории", startrow=0, index=False)
-                            worksheet5 = writer.sheets["5. Отток клиентов из категории"]
-                            # Форматируем значения: числа как целые, проценты как проценты
-                            from openpyxl.styles import Alignment as ExcelAlignment
-                            for row_idx in range(2, len(churn_table_copy) + 2):
-                                for col_idx in range(1, len(churn_table_copy.columns) + 1):
-                                    cell = worksheet5.cell(row=row_idx, column=col_idx)
-                                    cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
-                                    col_name = churn_table_copy.columns[col_idx - 1]
-                                    if col_name in ['Кол-во клиентов когорты', 'Накопительное кол-во возврата', 'Отток кол-во']:
-                                        # Колонки с числами
-                                        if cell.value is not None and not isinstance(cell.value, str):
-                                            cell.number_format = '0'  # Формат целого числа
-                                    elif col_name in ['Накопительный % возврата', 'Отток %']:
-                                        # Колонки с процентами - сохраняем как число (уже в процентах, конвертируем в долю)
-                                        if cell.value is not None and not isinstance(cell.value, str):
-                                            # Значение уже в процентах (например, 45.7), конвертируем в долю (0.457)
-                                            cell.value = float(cell.value) / 100.0
-                                            cell.number_format = '0.0%'  # Процентный формат Excel
-                            
-                            # Таблица 6: Присутствие клиентов оттока когорты в других категориях товаров (объединённая таблица)
-                            if ('category_summary_table' in st.session_state and st.session_state.category_summary_table is not None) or \
-                               ('category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None):
-                                
-                                start_row = 0
-                                worksheet_combined = None
-                                
-                                # Добавляем верхнюю таблицу с итоговыми метриками
-                                if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
-                                    summary_table_excel = st.session_state.category_summary_table.copy()
-                                    summary_table_excel.index.name = 'Метрика / Когорта'
-                                    summary_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
-                                    worksheet_combined = writer.sheets["6. Присутствие в других категориях"]
-                                    
-                                    # Форматируем верхнюю таблицу
-                                    for row_idx in range(start_row + 2, start_row + len(summary_table_excel.index) + 2):
-                                        for col_idx in range(2, len(summary_table_excel.columns) + 2):
-                                            cell = worksheet_combined.cell(row=row_idx, column=col_idx)
-                                            cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
-                                            row_name = summary_table_excel.index[row_idx - start_row - 2]
-                                            
-                                            if cell.value is not None and not isinstance(cell.value, str):
-                                                if row_name == 'Доля оттока из сети от когорты':
-                                                    # Процентная колонка - конвертируем из процентов в долю
-                                                    cell.value = float(cell.value) / 100.0
-                                                    cell.number_format = '0.0%'
-                                                else:
-                                                    # Числовые колонки
-                                                    cell.number_format = '0'  # Формат целого числа
-                                    
-                                    # Форматируем заголовок строки верхней таблицы
-                                    for row_idx in range(start_row + 2, start_row + len(summary_table_excel.index) + 2):
-                                        cell = worksheet_combined.cell(row=row_idx, column=1)
-                                        cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
-                                    
-                                    # Обновляем начальную строку для следующей таблицы (верхняя таблица + 2 пустые строки)
-                                    start_row = start_row + len(summary_table_excel.index) + 3
-                                
-                                # Добавляем таблицу с разрезом по категориям
-                                if 'category_cohort_table' in st.session_state and st.session_state.category_cohort_table is not None:
-                                    category_table_excel = st.session_state.category_cohort_table.copy()
-                                    category_table_excel.index.name = 'Категория / Когорта'
-                                    
-                                    if worksheet_combined is None:
-                                        # Если верхней таблицы не было, создаём новый лист
-                                        category_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
-                                        worksheet_combined = writer.sheets["6. Присутствие в других категориях"]
-                                    else:
-                                        # Записываем вторую таблицу на тот же лист
-                                        category_table_excel.to_excel(writer, sheet_name="6. Присутствие в других категориях", startrow=start_row, index=True)
-                                    
-                                    # Форматируем таблицу с категориями
-                                    for row_idx in range(start_row + 2, start_row + len(category_table_excel.index) + 2):
-                                        for col_idx in range(2, len(category_table_excel.columns) + 2):
-                                            cell = worksheet_combined.cell(row=row_idx, column=col_idx)
-                                            cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
-                                            if cell.value is not None and not isinstance(cell.value, str):
-                                                cell.number_format = '0'  # Формат целого числа
-                                    
-                                    # Форматируем заголовок строки таблицы с категориями
-                                    for row_idx in range(start_row + 2, start_row + len(category_table_excel.index) + 2):
-                                        cell = worksheet_combined.cell(row=row_idx, column=1)
-                                        cell.alignment = ExcelAlignment(horizontal="left", vertical="center")
-                            
-                            # Удаляем пустой лист по умолчанию
-                            if 'Sheet' in workbook.sheetnames:
-                                workbook.remove(workbook['Sheet'])
-                        
-                        buffer.seek(0)
-                        return buffer.getvalue()
-                    
-                    # CSS для увеличения размера кнопок загрузки
-                    st.markdown("""
-                    <style>
-                    div[data-testid="stDownloadButton"] > button {
-                        height: 60px !important;
-                        font-size: 40px !important;
-                        font-weight: bold !important;
-                        padding: 15px 30px !important;
-                        background: white !important;
-                        color: #333 !important;
-                        border: 2px solid #ccc !important;
-                    }
-                    div[data-testid="stDownloadButton"] > button > div > p {
-                        font-size: 40px !important;
-                        font-weight: bold !important;
-                    }
-                    </style>
-                    """, unsafe_allow_html=True)
-                    
-                    # Создаем колонки для горизонтального размещения кнопок
-                    col_excel_button, col_pdf_button = st.columns(2)
-                    
-                    # Генерируем файл каждый раз при рендеринге (данные могут обновиться)
-                    # Используем сохранённый файл из session_state, если он есть (после загрузки категорий)
-                    if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
-                        excel_data_full = st.session_state.excel_report_data
-                    else:
-                        # Генерируем файл (данные категорий ещё не загружены)
-                        excel_data_full = create_full_report_excel()
-                    
-                    with col_excel_button:
-                        st.download_button(
-                            label="📥 Скачать полный отчёт в Excel",
-                            data=excel_data_full,
-                            file_name=f"полный_отчёт_когортный_анализ_{info['first_period']}_{info['last_period']}.xlsx",
-                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            use_container_width=True,
-                            key="download_full_report"
-                        )
-                    
-                    # Создаем функцию для генерации аналитического PDF отчёта
-                    def create_analysis_pdf():
-                        """Создает PDF отчёт с графиками и анализом"""
-                        buffer = io.BytesIO()
-                        
-                        # Регистрируем шрифт с поддержкой кириллицы
-                        font_name = 'Helvetica'
-                        font_name_bold = 'Helvetica-Bold'
-                        
-                        try:
-                            # Пытаемся найти системный шрифт с поддержкой кириллицы
-                            if platform.system() == 'Windows':
-                                # Пути к стандартным шрифтам Windows с поддержкой кириллицы
-                                windows_fonts = [
-                                    r'C:\Windows\Fonts\arial.ttf',
-                                    r'C:\Windows\Fonts\calibri.ttf',
-                                    r'C:\Windows\Fonts\comic.ttf',
-                                    r'C:\Windows\Fonts\cour.ttf',
-                                ]
-                                
-                                # Регистрируем первый доступный шрифт
-                                for font_path in windows_fonts:
-                                    if os.path.exists(font_path):
-                                        try:
-                                            font_name = 'CyrillicFont'
-                                            font_name_bold = 'CyrillicFont-Bold'
-                                            pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                            pdfmetrics.registerFont(TTFont(font_name_bold, font_path))
-                                            break
-                                        except Exception as e:
-                                            continue
-                            elif platform.system() == 'Linux':
-                                # Пути к стандартным шрифтам Linux с поддержкой кириллицы
-                                linux_fonts = [
-                                    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-                                    '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
-                                    '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',
-                                    '/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf',
-                                    '/usr/share/fonts/TTF/DejaVuSans.ttf',
-                                ]
-                                
-                                # Регистрируем первый доступный шрифт
-                                for font_path in linux_fonts:
-                                    if os.path.exists(font_path):
-                                        try:
-                                            font_name = 'CyrillicFont'
-                                            font_name_bold = 'CyrillicFont-Bold'
-                                            pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                            pdfmetrics.registerFont(TTFont(font_name_bold, font_path))
-                                            break
-                                        except Exception as e:
-                                            continue
-                        except Exception as e:
-                            pass  # Используем стандартные шрифты в случае ошибки
-                        
-                        # Получаем данные из session state
-                        cohort_matrix = st.session_state.cohort_matrix
-                        sorted_periods = st.session_state.sorted_periods
-                        accumulation_matrix = st.session_state.accumulation_matrix
-                        accumulation_percent_matrix = st.session_state.accumulation_percent_matrix
-                        inflow_matrix = st.session_state.inflow_matrix
-                        churn_table = st.session_state.churn_table
-                        
-                        # Создаем PDF документ
-                        doc = SimpleDocTemplate(buffer, pagesize=A4)
-                        story = []
-                        styles = getSampleStyleSheet()
-                        
-                        # Стили с поддержкой кириллицы
-                        title_style = ParagraphStyle(
-                            'CustomTitle',
-                            parent=styles['Heading1'],
-                            fontName=font_name_bold,
-                            fontSize=24,
-                            textColor=colors.HexColor('#1f77b4'),
-                            spaceAfter=30,
-                            alignment=TA_CENTER
-                        )
-                        
-                        heading_style = ParagraphStyle(
-                            'CustomHeading',
-                            parent=styles['Heading2'],
-                            fontName=font_name_bold,
-                            fontSize=16,
-                            textColor=colors.HexColor('#1f77b4'),
-                            spaceAfter=12,
-                            spaceBefore=12
-                        )
-                        
-                        # Стиль для обычного текста с поддержкой кириллицы
-                        normal_style = ParagraphStyle(
-                            'CustomNormal',
-                            parent=styles['Normal'],
-                            fontName=font_name,
-                            fontSize=10
-                        )
-                        
-                        # Стиль для заголовков третьего уровня с поддержкой кириллицы
-                        heading3_style = ParagraphStyle(
-                            'CustomHeading3',
-                            parent=styles['Heading3'],
-                            fontName=font_name_bold,
-                            fontSize=12,
-                            textColor=colors.HexColor('#1f77b4'),
-                            spaceAfter=8,
-                            spaceBefore=8
-                        )
-                        
-                        # Титульная страница
-                        story.append(Paragraph("КОГОРТНЫЙ АНАЛИЗ", title_style))
-                        story.append(Spacer(1, 0.3*inch))
-                        story.append(Paragraph(f"Период анализа: {info['first_period']} - {info['last_period']}", normal_style))
-                        story.append(Paragraph(f"Количество когорт: {info['num_periods']}", normal_style))
-                        story.append(Paragraph(f"Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}", normal_style))
-                        story.append(PageBreak())
-                        
-                        # Раздел 1: Общая статистика
-                        story.append(Paragraph("1. ОБЩАЯ СТАТИСТИКА", heading_style))
-                        
-                        # Диагональные значения (размер когорт)
-                        diagonal_values = {period: cohort_matrix.loc[period, period] for period in sorted_periods}
-                        
-                        stats_data = [
-                            ['Метрика', 'Значение'],
-                            ['Всего когорт', str(info['num_periods'])],
-                            ['Период начала', info['first_period']],
-                            ['Период окончания', info['last_period']],
-                            ['Максимальный размер когорты', f"{int(info['max_clients'])} ({info['max_period']})"],
-                            ['Минимальный размер когорты', f"{int(info['min_clients'])} ({info['min_period']})"],
-                            ['Средний размер когорты', f"{int(np.mean(list(diagonal_values.values())))}"],
-                            ['Общее количество уникальных клиентов', f"{int(sum(diagonal_values.values()))}"]
-                        ]
-                        
-                        stats_table = Table(stats_data, colWidths=[4*inch, 3*inch])
-                        stats_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f77b4')),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                            ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                            ('FONTNAME', (0, 1), (-1, -1), font_name),
-                            ('FONTSIZE', (0, 0), (-1, 0), 12),
-                            ('FONTSIZE', (0, 1), (-1, -1), 10),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                        ]))
-                        story.append(stats_table)
-                        story.append(Spacer(1, 0.3*inch))
-                        
-                        # График 1: Динамика размера когорт
-                        story.append(Paragraph("2. ДИНАМИКА РАЗМЕРА КОГОРТ", heading_style))
-                        
-                        fig, ax = plt.subplots(figsize=(10, 6))
-                        cohort_sizes = [diagonal_values[p] for p in sorted_periods]
-                        ax.plot(range(len(sorted_periods)), cohort_sizes, marker='o', linewidth=2, markersize=8, color='#1f77b4')
-                        ax.set_xlabel('Период', fontsize=12, fontweight='bold')
-                        ax.set_ylabel('Количество клиентов', fontsize=12, fontweight='bold')
-                        ax.set_title('Динамика размера когорт по периодам', fontsize=14, fontweight='bold', pad=20)
-                        ax.set_xticks(range(len(sorted_periods)))
-                        ax.set_xticklabels(sorted_periods, rotation=45, ha='right')
-                        ax.grid(True, alpha=0.3)
-                        ax.set_facecolor('#f8f9fa')
-                        
-                        for i, (period, size) in enumerate(zip(sorted_periods, cohort_sizes)):
-                            ax.annotate(f'{int(size)}', (i, size), textcoords="offset points", xytext=(0,10), ha='center', fontsize=9)
-                        
-                        plt.tight_layout()
-                        img_buffer1 = io.BytesIO()
-                        plt.savefig(img_buffer1, format='png', dpi=150, bbox_inches='tight')
-                        img_buffer1.seek(0)
-                        plt.close()
-                        
-                        img1 = Image(img_buffer1, width=6*inch, height=3.6*inch)
-                        story.append(img1)
-                        story.append(Spacer(1, 0.3*inch))
-                        
-                        # График 2: Тепловая карта возврата в %
-                        story.append(Paragraph("3. ТЕПЛОВАЯ КАРТА ВОЗВРАТА В %", heading_style))
-                        
-                        # Создаём упрощённую матрицу для визуализации (первые 15 когорт и периодов)
-                        max_cohorts = min(15, len(sorted_periods))
-                        matrix_vis = accumulation_percent_matrix.iloc[:max_cohorts, :max_cohorts]
-                        
-                        fig, ax = plt.subplots(figsize=(12, 10))
-                        sns.heatmap(matrix_vis, annot=True, fmt='.1f', cmap='RdYlGn', 
-                                   cbar_kws={'label': 'Процент возврата (%)'}, 
-                                   ax=ax, vmin=0, vmax=100, linewidths=0.5, linecolor='gray')
-                        ax.set_title('Тепловая карта накопления возврата клиентов (%)', fontsize=14, fontweight='bold', pad=20)
-                        ax.set_xlabel('Период', fontsize=12, fontweight='bold')
-                        ax.set_ylabel('Когорта', fontsize=12, fontweight='bold')
-                        
-                        plt.tight_layout()
-                        img_buffer2 = io.BytesIO()
-                        plt.savefig(img_buffer2, format='png', dpi=150, bbox_inches='tight')
-                        img_buffer2.seek(0)
-                        plt.close()
-                        
-                        img2 = Image(img_buffer2, width=6*inch, height=5*inch)
-                        story.append(img2)
-                        story.append(Spacer(1, 0.3*inch))
-                        
-                        # График 3: Отток по когортам
-                        story.append(Paragraph("4. АНАЛИЗ ОТТОКА КЛИЕНТОВ", heading_style))
-                        
-                        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-                        
-                        # Столбчатая диаграмма оттока в количестве
-                        churn_counts = churn_table['Отток кол-во'].values[:15]
-                        cohorts_display = churn_table['Когорта'].values[:15]
-                        
-                        colors_churn = ['#d62728' if x > churn_table['Отток кол-во'].mean() else '#ff7f0e' for x in churn_counts]
-                        ax1.barh(range(len(cohorts_display)), churn_counts, color=colors_churn)
-                        ax1.set_yticks(range(len(cohorts_display)))
-                        ax1.set_yticklabels(cohorts_display, fontsize=9)
-                        ax1.set_xlabel('Количество клиентов оттока', fontsize=11, fontweight='bold')
-                        ax1.set_title('Отток клиентов из категории по когортам', fontsize=12, fontweight='bold')
-                        ax1.grid(True, alpha=0.3, axis='x')
-                        
-                        # Столбчатая диаграмма оттока в процентах
-                        churn_percents = churn_table['Отток %'].values[:15]
-                        colors_churn_pct = ['#d62728' if x > churn_table['Отток %'].mean() else '#ff7f0e' for x in churn_percents]
-                        ax2.barh(range(len(cohorts_display)), churn_percents, color=colors_churn_pct)
-                        ax2.set_yticks(range(len(cohorts_display)))
-                        ax2.set_yticklabels(cohorts_display, fontsize=9)
-                        ax2.set_xlabel('Процент оттока (%)', fontsize=11, fontweight='bold')
-                        ax2.set_title('Процент оттока по когортам', fontsize=12, fontweight='bold')
-                        ax2.grid(True, alpha=0.3, axis='x')
-                        
-                        plt.tight_layout()
-                        img_buffer4 = io.BytesIO()
-                        plt.savefig(img_buffer4, format='png', dpi=150, bbox_inches='tight')
-                        img_buffer4.seek(0)
-                        plt.close()
-                        
-                        img4 = Image(img_buffer4, width=7*inch, height=3.6*inch)
-                        story.append(img4)
-                        story.append(Spacer(1, 0.3*inch))
-                        
-                        # Таблицы с ключевыми метриками
-                        story.append(Paragraph("5. КЛЮЧЕВЫЕ МЕТРИКИ", heading_style))
-                        
-                        # Топ-5 когорт по размеру
-                        story.append(Paragraph("Топ-5 когорт по размеру:", heading3_style))
-                        top5_size = sorted(diagonal_values.items(), key=lambda x: x[1], reverse=True)[:5]
-                        top5_data = [['Место', 'Когорта', 'Количество клиентов']]
-                        for i, (period, size) in enumerate(top5_size, 1):
-                            top5_data.append([str(i), period, str(int(size))])
-                        
-                        top5_table = Table(top5_data, colWidths=[0.8*inch, 2.5*inch, 2*inch])
-                        top5_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f77b4')),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                            ('FONTNAME', (0, 1), (-1, -1), font_name),
-                            ('FONTSIZE', (0, 0), (-1, 0), 10),
-                            ('FONTSIZE', (0, 1), (-1, -1), 10),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                        ]))
-                        story.append(top5_table)
-                        story.append(Spacer(1, 0.2*inch))
-                        
-                        # Топ-5 когорт по проценту возврата
-                        story.append(Paragraph("Топ-5 когорт по проценту возврата:", heading3_style))
-                        churn_sorted_return = churn_table.sort_values('Накопительный % возврата', ascending=False)
-                        top5_return_data = [['Место', 'Когорта', 'Процент возврата', 'Размер когорты']]
-                        for i, row in enumerate(churn_sorted_return.head(5).itertuples(index=False), 1):
-                            top5_return_data.append([
-                                str(i), 
-                                row[0],  # Когорта
-                                f"{row[3]:.1f}%",  # Накопительный % возврата
-                                str(int(row[1]))  # Кол-во клиентов когорты
-                            ])
-                        
-                        top5_return_table = Table(top5_return_data, colWidths=[0.8*inch, 2*inch, 1.5*inch, 1.5*inch])
-                        top5_return_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2ca02c')),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                            ('FONTNAME', (0, 1), (-1, -1), font_name),
-                            ('FONTSIZE', (0, 0), (-1, 0), 10),
-                            ('FONTSIZE', (0, 1), (-1, -1), 10),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                        ]))
-                        story.append(top5_return_table)
-                        story.append(Spacer(1, 0.2*inch))
-                        
-                        # Когорты с максимальным оттоком
-                        story.append(Paragraph("Топ-5 когорт с наибольшим оттоком:", heading3_style))
-                        churn_sorted_churn = churn_table.sort_values('Отток %', ascending=False)
-                        top5_churn_data = [['Место', 'Когорта', 'Отток (%)', 'Отток (кол-во)']]
-                        for i, row in enumerate(churn_sorted_churn.head(5).itertuples(index=False), 1):
-                            top5_churn_data.append([
-                                str(i),
-                                row[0],  # Когорта
-                                f"{row[5]:.1f}%",  # Отток %
-                                str(int(row[4]))  # Отток кол-во
-                            ])
-                        
-                        top5_churn_table = Table(top5_churn_data, colWidths=[0.8*inch, 2*inch, 1.5*inch, 1.5*inch])
-                        top5_churn_table.setStyle(TableStyle([
-                            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#d62728')),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                            ('FONTNAME', (0, 1), (-1, -1), font_name),
-                            ('FONTSIZE', (0, 0), (-1, 0), 10),
-                            ('FONTSIZE', (0, 1), (-1, -1), 10),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                        ]))
-                        story.append(top5_churn_table)
-                        story.append(Spacer(1, 0.3*inch))
-                        
-                        # Выводы и рекомендации
-                        story.append(Paragraph("6. ВЫВОДЫ И РЕКОМЕНДАЦИИ", heading_style))
-                        
-                        avg_return = churn_table['Накопительный % возврата'].mean()
-                        avg_churn = churn_table['Отток %'].mean()
-                        
-                        top5_size = sorted(diagonal_values.items(), key=lambda x: x[1], reverse=True)[:5]
-                        conclusions = [
-                            f"• Средний процент возврата клиентов: {avg_return:.1f}%",
-                            f"• Средний процент оттока: {avg_churn:.1f}%",
-                            f"• Наиболее стабильная когорта (по размеру): {top5_size[0][0]} ({int(top5_size[0][1])} клиентов)",
-                            f"• Когорта с наилучшим возвратом: {churn_sorted_return.iloc[0, 0]} ({churn_sorted_return.iloc[0, 3]:.1f}%)",
-                            f"• Когорта с наибольшим оттоком требует внимания: {churn_sorted_churn.iloc[0, 0]} ({churn_sorted_churn.iloc[0, 5]:.1f}%)"
-                        ]
-                        
-                        for conclusion in conclusions:
-                            story.append(Paragraph(conclusion, normal_style))
-                            story.append(Spacer(1, 0.1*inch))
-                        
-                        # Собираем PDF
-                        doc.build(story)
-                        buffer.seek(0)
-                        return buffer.getvalue()
-                    
-                    # Генерируем PDF при нажатии кнопки
-                    pdf_data = create_analysis_pdf()
-                    
-                    with col_pdf_button:
-                        st.download_button(
-                            label="📊 Скачать анализ отчёта в PDF",
-                            data=pdf_data,
-                            file_name=f"анализ_когортный_{info['first_period']}_{info['last_period']}.pdf",
-                            mime="application/pdf",
-                            use_container_width=True,
-                            key="download_analysis_pdf"
-                        )
                     
                     # Шестой блок - Присутствие клиентов оттока в других категориях
                     st.markdown("---")
