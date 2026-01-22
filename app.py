@@ -1296,6 +1296,10 @@ if uploaded_file is not None:
                             """Создает полный Excel отчёт со всеми таблицами"""
                             buffer = io.BytesIO()
                             
+                            # Импорты для форматирования Excel
+                            from openpyxl.styles import Font
+                            from openpyxl.utils import get_column_letter
+                            
                             # Получаем данные из session state
                             cohort_matrix = st.session_state.cohort_matrix
                             sorted_periods = st.session_state.sorted_periods
@@ -1612,18 +1616,15 @@ if uploaded_file is not None:
                                             )
                                             worksheet_cohorts = writer.sheets["7. Присутствие когорты в других категориях"]
                                             # Добавляем заголовок когорты
-                                            from openpyxl.utils import get_column_letter
                                             last_col_letter = get_column_letter(len(new_columns) + 1)
                                             worksheet_cohorts.cell(row=start_row_cohorts + 1, column=1, value=f"Когорта: {selected_cohort}")
                                             worksheet_cohorts.merge_cells(f'A{start_row_cohorts + 1}:{last_col_letter}{start_row_cohorts + 1}')
-                                            from openpyxl.styles import Font
                                             header_cell = worksheet_cohorts.cell(row=start_row_cohorts + 1, column=1)
                                             header_cell.font = Font(bold=True, size=12)
                                             header_cell.alignment = ExcelAlignment(horizontal="center", vertical="center")
                                             start_row_cohorts += 2
                                         else:
                                             # Добавляем заголовок когорты
-                                            from openpyxl.utils import get_column_letter
                                             last_col_letter = get_column_letter(len(new_columns) + 1)
                                             worksheet_cohorts.cell(row=start_row_cohorts + 1, column=1, value=f"Когорта: {selected_cohort}")
                                             worksheet_cohorts.merge_cells(f'A{start_row_cohorts + 1}:{last_col_letter}{start_row_cohorts + 1}')
