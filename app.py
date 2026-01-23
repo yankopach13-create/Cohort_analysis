@@ -1645,7 +1645,7 @@ if uploaded_file is not None:
                                         # Обновляем начальную строку для следующей таблицы (таблица + 2 пустые строки)
                                         start_row_cohorts = start_row_cohorts + len(category_period_table_with_totals.index) + 3
                                 
-                                # Таблица 8: Сводная таблица по всем когортам
+                                # Таблица 7: Сводная таблица по всем когортам
                                 if st.session_state.get('churn_table') is not None:
                                     churn_table = st.session_state.churn_table
                                     
@@ -1826,8 +1826,8 @@ if uploaded_file is not None:
                                     summary_df.index.name = 'Метрика / Когорта'
                                     
                                     # Записываем в Excel
-                                    summary_df.to_excel(writer, sheet_name="8. Сводная таблица по всем когортам", startrow=0, index=True)
-                                    worksheet_summary = writer.sheets["8. Сводная таблица по всем когортам"]
+                                    summary_df.to_excel(writer, sheet_name="7. Сводная таблица по всем когортам", startrow=0, index=True)
+                                    worksheet_summary = writer.sheets["7. Сводная таблица по всем когортам"]
                                     
                                     # Форматируем таблицу
                                     for row_idx in range(2, len(summary_df.index) + 2):
