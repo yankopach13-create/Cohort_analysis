@@ -873,8 +873,8 @@ def get_client_cohorts(df, year_month_col, client_col, sorted_periods):
 def get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_period, period_clients_cache=None, client_cohorts_cache=None):
     """
     Получает коды клиентов оттока из когорты (те, кто не вернулся ни разу после периода когорты)
-    Логика: когорта = все клиенты, которые покупали в этом периоде (независимо от того, первый ли это период для них)
-    Отток = клиенты, которые покупали в период, но дальше их нет (не вернулись после периода)
+    Важно: когорта определяется как первый период появления клиента, а не просто все клиенты из периода
+    Это гарантирует, что каждый клиент попадает только в одну когорту, устраняя дубли
     """
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     cohort_idx = period_indices.get(cohort_period, -1)
@@ -882,11 +882,15 @@ def get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_per
     if cohort_idx < 0:
         return []
     
-    # Получаем множество всех клиентов, которые покупали в этом периоде (когорта)
-    if period_clients_cache:
-        cohort_clients = period_clients_cache.get(cohort_period, set())
-    else:
-        cohort_clients = set(df[df[year_month_col] == cohort_period][client_col].dropna().unique())
+    # Получаем когорты клиентов (если кэш не передан, вычисляем)
+    if client_cohorts_cache is None:
+        client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
+    
+    # Получаем множество клиентов, для которых указанный период является их когортой (первым появлением)
+    cohort_clients = set()
+    for client, client_cohort in client_cohorts_cache.items():
+        if client_cohort == cohort_period:
+            cohort_clients.add(client)
     
     # Если когорта пустая, возвращаем пустой список
     if not cohort_clients:
