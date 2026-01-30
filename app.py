@@ -46,7 +46,7 @@ def create_copy_button(text, button_label, key):
     <div data-testid="stButton" style="width: 100%; margin: 5px 0;">
         <button onclick="copyToClipboard_{key}()" style="
             width: 100%;
-            padding: 8px 12px;
+            padding: 12px 16px;
             background: #f8f9fa !important;
             color: #333 !important;
             border: 2px solid #e0e0e0 !important;
@@ -56,7 +56,7 @@ def create_copy_button(text, button_label, key):
             font-size: 0.85rem !important;
             line-height: 1.3 !important;
             text-align: center !important;
-            min-height: auto !important;
+            min-height: 50px !important;
             height: auto !important;
             display: flex !important;
             align-items: center !important;
@@ -127,7 +127,7 @@ def create_copy_button(text, button_label, key):
         }}
     </script>
     """
-    components.html(html, height=60)
+    components.html(html, height=70)
 
 st.title("📊 Когортный анализ, возвращаемость и отток")
 st.markdown("---")
