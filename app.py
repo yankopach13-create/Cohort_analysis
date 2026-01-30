@@ -46,16 +46,16 @@ def create_copy_button(text, button_label, key):
     <div style="width: 100%; margin: 5px 0;">
         <button onclick="copyToClipboard_{key}()" style="
             width: 100%;
-            padding: 10px 16px;
+            padding: 8px 12px;
             background: #f8f9fa;
             color: #333;
             border: 2px solid #e0e0e0;
             border-bottom: 2px solid #e0e0e0;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-            line-height: 1.4;
+            font-weight: 400;
+            font-size: 0.85rem;
+            line-height: 1.3;
             text-align: center;
             min-height: auto;
             height: auto;
@@ -71,7 +71,7 @@ def create_copy_button(text, button_label, key):
             box-sizing: border-box;
         " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)'; this.style.background='#ffffff'; this.style.borderColor='#d0d0d0'; this.style.borderBottomColor='#d0d0d0';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'; this.style.background='#f8f9fa'; this.style.borderColor='#e0e0e0'; this.style.borderBottomColor='#e0e0e0';" onmousedown="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)';" onmouseup="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)';">
             <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
-                <p style="margin: 0; padding: 0; font-size: 0.9rem; font-weight: 600; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">{button_label}</p>
+                <p style="margin: 0; padding: 0; font-size: 0.85rem; font-weight: 400; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">{button_label}</p>
             </div>
         </button>
         <div id="copy_status_{key}" style="margin-top: 5px; color: rgb(0, 128, 0); font-size: 0.8rem; display: none; text-align: center;">✓ Скопировано!</div>
@@ -128,7 +128,7 @@ def create_copy_button(text, button_label, key):
         }}
     </script>
     """
-    components.html(html, height=70)
+    components.html(html, height=60)
 
 st.title("📊 Когортный анализ, возвращаемость и отток")
 st.markdown("---")
