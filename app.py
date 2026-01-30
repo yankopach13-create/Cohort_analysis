@@ -911,59 +911,29 @@ def get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_per
 def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix, client_cohorts_cache=None, period_clients_cache=None):
     """
     Строит таблицу оттока клиентов для всех когорт
-    Важно: когорта определяется как первый период появления клиента
-    Оптимизированная версия с использованием кэша периодов
+    Использует исходную логику: когорта = все клиенты из периода (не только первый период появления)
     """
     churn_data = []
-    
-    # Получаем когорты клиентов (если кэш не передан, вычисляем)
-    if client_cohorts_cache is None:
-        client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
     
     # Оптимизация: создаём period_indices один раз вне цикла
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     last_period = sorted_periods[-1]
     last_period_idx = period_indices[last_period]
     
-    # Подсчитываем размер каждой когорты (количество клиентов, для которых этот период - первый)
-    cohort_sizes = {}
-    # Группируем клиентов по когортам для быстрого доступа
-    cohort_clients_dict = {}
-    for client, client_cohort in client_cohorts_cache.items():
-        if client_cohort not in cohort_sizes:
-            cohort_sizes[client_cohort] = 0
-            cohort_clients_dict[client_cohort] = set()
-        cohort_sizes[client_cohort] += 1
-        cohort_clients_dict[client_cohort].add(client)
-    
-    # Создаем кэш периодов, если не передан
-    if period_clients_cache is None:
-        period_clients_cache = {}
-        for period in sorted_periods:
-            period_data = df[df[year_month_col] == period]
-            period_clients_cache[period] = set(period_data[client_col].dropna().unique())
-    
     for cohort_period in sorted_periods:
         # 1. Когорта
         cohort = cohort_period
         
-        # 2. Кол-во клиентов когорты (только тех, для кого это первый период)
-        cohort_size = cohort_sizes.get(cohort_period, 0)
+        # 2. Кол-во клиентов когорты (из матрицы когорт - все клиенты из этого периода)
+        cohort_size = cohort_matrix.loc[cohort_period, cohort_period]
         
         # 3. Накопительное кол-во возврата за весь период
+        # Берем последний столбец (последний период) для этой когорты
         cohort_idx = period_indices[cohort_period]
         
         if last_period_idx > cohort_idx:
-            # Если есть периоды после когорты, считаем возврат используя кэш
-            cohort_clients = cohort_clients_dict.get(cohort_period, set())
-            
-            # Находим клиентов, которые вернулись хотя бы раз после когорты
-            returned_clients = set()
-            for period in sorted_periods[cohort_idx + 1:]:
-                period_clients = period_clients_cache.get(period, set())
-                returned_clients.update(cohort_clients & period_clients)
-            
-            total_returned = len(returned_clients)
+            # Если есть периоды после когорты, берем значение из матрицы накопления
+            total_returned = accumulation_matrix.loc[cohort_period, last_period]
         else:
             # Если это последняя когорта, возврат = 0
             total_returned = 0
@@ -1456,7 +1426,7 @@ if uploaded_file is not None:
                                 apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods)
                                 
                                 # Таблица 5: Отток клиентов из категории
-                                churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix)
+                                churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix, None, None)
                                 churn_table_copy = churn_table_full.copy()
                                 # Не конвертируем проценты в строки - сохраняем как числа для возможности расчетов
                                 churn_table_copy.to_excel(writer, sheet_name="5. Отток клиентов из категории", startrow=0, index=False)
