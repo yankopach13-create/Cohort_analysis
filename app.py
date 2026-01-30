@@ -850,27 +850,22 @@ def get_client_cohorts(df, year_month_col, client_col, sorted_periods):
     """
     Определяет когорту для каждого клиента (первый период появления)
     Returns: словарь {client: cohort_period}
+    Оптимизированная версия с использованием groupby
     """
-    client_cohorts = {}
+    # Создаем словарь индексов периодов для быстрого поиска
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     
-    # Группируем данные по клиентам и находим первый период для каждого
-    for client in df[client_col].dropna().unique():
-        client_data = df[df[client_col] == client]
-        client_periods = client_data[year_month_col].dropna().unique()
-        
-        # Находим первый период появления клиента
-        first_period = None
-        first_period_idx = len(sorted_periods)
-        
-        for period in client_periods:
-            if period in period_indices:
-                period_idx = period_indices[period]
-                if period_idx < first_period_idx:
-                    first_period_idx = period_idx
-                    first_period = period
-        
-        if first_period is not None:
+    # Фильтруем только валидные периоды и клиентов
+    df_filtered = df[[year_month_col, client_col]].dropna()
+    
+    # Группируем по клиентам и находим минимальный период (первый по индексу)
+    # Используем groupby для эффективности
+    client_first_periods = df_filtered.groupby(client_col)[year_month_col].min()
+    
+    # Преобразуем в словарь, фильтруя только валидные периоды
+    client_cohorts = {}
+    for client, first_period in client_first_periods.items():
+        if first_period in period_indices:
             client_cohorts[client] = first_period
     
     return client_cohorts
@@ -913,10 +908,11 @@ def get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_per
     churn_clients = cohort_clients - returned_clients
     return sorted(list(churn_clients))
 
-def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix, client_cohorts_cache=None):
+def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix, client_cohorts_cache=None, period_clients_cache=None):
     """
     Строит таблицу оттока клиентов для всех когорт
     Важно: когорта определяется как первый период появления клиента
+    Оптимизированная версия с использованием кэша периодов
     """
     churn_data = []
     
@@ -931,10 +927,21 @@ def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_mat
     
     # Подсчитываем размер каждой когорты (количество клиентов, для которых этот период - первый)
     cohort_sizes = {}
+    # Группируем клиентов по когортам для быстрого доступа
+    cohort_clients_dict = {}
     for client, client_cohort in client_cohorts_cache.items():
         if client_cohort not in cohort_sizes:
             cohort_sizes[client_cohort] = 0
+            cohort_clients_dict[client_cohort] = set()
         cohort_sizes[client_cohort] += 1
+        cohort_clients_dict[client_cohort].add(client)
+    
+    # Создаем кэш периодов, если не передан
+    if period_clients_cache is None:
+        period_clients_cache = {}
+        for period in sorted_periods:
+            period_data = df[df[year_month_col] == period]
+            period_clients_cache[period] = set(period_data[client_col].dropna().unique())
     
     for cohort_period in sorted_periods:
         # 1. Когорта
@@ -944,19 +951,16 @@ def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_mat
         cohort_size = cohort_sizes.get(cohort_period, 0)
         
         # 3. Накопительное кол-во возврата за весь период
-        # Берем последний столбец (последний период) для этой когорты
         cohort_idx = period_indices[cohort_period]
         
         if last_period_idx > cohort_idx:
-            # Если есть периоды после когорты, считаем возврат вручную
-            # Получаем клиентов этой когорты
-            cohort_clients = {client for client, client_cohort in client_cohorts_cache.items() if client_cohort == cohort_period}
+            # Если есть периоды после когорты, считаем возврат используя кэш
+            cohort_clients = cohort_clients_dict.get(cohort_period, set())
             
             # Находим клиентов, которые вернулись хотя бы раз после когорты
             returned_clients = set()
             for period in sorted_periods[cohort_idx + 1:]:
-                period_data = df[df[year_month_col] == period]
-                period_clients = set(period_data[client_col].dropna().unique())
+                period_clients = period_clients_cache.get(period, set())
                 returned_clients.update(cohort_clients & period_clients)
             
             total_returned = len(returned_clients)
@@ -1283,10 +1287,15 @@ if uploaded_file is not None:
                             st.session_state.sorted_periods = sorted_periods
                             
                             # Кэшируем множества клиентов по периодам для быстрого доступа в функциях получения клиентов
+                            # Оптимизация: используем groupby вместо циклов с фильтрацией
                             period_clients_cache = {}
+                            df_filtered = df[[year_month_col, client_col]].dropna()
+                            for period, group in df_filtered.groupby(year_month_col):
+                                period_clients_cache[period] = set(group[client_col].unique())
+                            # Добавляем пустые множества для периодов без клиентов
                             for period in sorted_periods:
-                                period_data = df[df[year_month_col] == period]
-                                period_clients_cache[period] = set(period_data[client_col].dropna().unique())
+                                if period not in period_clients_cache:
+                                    period_clients_cache[period] = set()
                             st.session_state.period_clients_cache = period_clients_cache
                             
                             # Кэшируем когорты клиентов (первый период появления каждого клиента)
@@ -1326,13 +1335,18 @@ if uploaded_file is not None:
                             client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
                             st.session_state.client_cohorts_cache = client_cohorts_cache
                             
-                            st.session_state.churn_table = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, st.session_state.accumulation_matrix, st.session_state.accumulation_percent_matrix, client_cohorts_cache)
+                            st.session_state.churn_table = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, st.session_state.accumulation_matrix, st.session_state.accumulation_percent_matrix, client_cohorts_cache, period_clients_cache)
                             
                             # Кэшируем множества клиентов по периодам для быстрого доступа в функциях получения клиентов
+                            # Оптимизация: используем groupby вместо циклов с фильтрацией
                             period_clients_cache = {}
+                            df_filtered = df[[year_month_col, client_col]].dropna()
+                            for period, group in df_filtered.groupby(year_month_col):
+                                period_clients_cache[period] = set(group[client_col].unique())
+                            # Добавляем пустые множества для периодов без клиентов
                             for period in sorted_periods:
-                                period_data = df[df[year_month_col] == period]
-                                period_clients_cache[period] = set(period_data[client_col].dropna().unique())
+                                if period not in period_clients_cache:
+                                    period_clients_cache[period] = set()
                             st.session_state.period_clients_cache = period_clients_cache
                     
                     # После завершения всех расчётов очищаем placeholder и отображаем весь контент
@@ -1353,14 +1367,20 @@ if uploaded_file is not None:
                         if client_cohorts_cache is None:
                             client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
                             st.session_state.client_cohorts_cache = client_cohorts_cache
-                        st.session_state.churn_table = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, st.session_state.accumulation_matrix, st.session_state.accumulation_percent_matrix, client_cohorts_cache)
+                        period_clients_cache = st.session_state.get('period_clients_cache')
+                        st.session_state.churn_table = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, st.session_state.accumulation_matrix, st.session_state.accumulation_percent_matrix, client_cohorts_cache, period_clients_cache)
                     
                     # Создаем кэш множеств клиентов, если его еще нет
                     if st.session_state.get('period_clients_cache') is None:
+                        # Оптимизация: используем groupby вместо циклов с фильтрацией
                         period_clients_cache = {}
+                        df_filtered = df[[year_month_col, client_col]].dropna()
+                        for period, group in df_filtered.groupby(year_month_col):
+                            period_clients_cache[period] = set(group[client_col].unique())
+                        # Добавляем пустые множества для периодов без клиентов
                         for period in sorted_periods:
-                            period_data = df[df[year_month_col] == period]
-                            period_clients_cache[period] = set(period_data[client_col].dropna().unique())
+                            if period not in period_clients_cache:
+                                period_clients_cache[period] = set()
                         st.session_state.period_clients_cache = period_clients_cache
                     
                     # Создаем кэш когорт клиентов, если его еще нет
