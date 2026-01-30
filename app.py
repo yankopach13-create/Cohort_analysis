@@ -32,6 +32,56 @@ st.set_page_config(
     layout="wide"
 )
 
+# Функция для создания кнопки копирования в буфер обмена
+def create_copy_button(text, button_label, key):
+    """Создает кнопку для копирования текста в буфер обмена"""
+    import streamlit.components.v1 as components
+    
+    html = f"""
+    <div style="margin: 10px 0;">
+        <button onclick="copyToClipboard_{key}()" style="
+            width: 100%;
+            padding: 0.5rem 1rem;
+            background-color: #1f77b4;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        ">{button_label}</button>
+        <div id="copy_status_{key}" style="margin-top: 5px; color: green; font-size: 0.9rem; display: none;">✓ Скопировано!</div>
+        <textarea id="copy_text_{key}" style="display: none;">{text}</textarea>
+    </div>
+    <script>
+        function copyToClipboard_{key}() {{
+            const textarea = document.getElementById('copy_text_{key}');
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // Для мобильных устройств
+            try {{
+                document.execCommand('copy');
+                const status = document.getElementById('copy_status_{key}');
+                status.style.display = 'block';
+                setTimeout(function() {{
+                    status.style.display = 'none';
+                }}, 2000);
+            }} catch(err) {{
+                // Fallback для современных браузеров
+                navigator.clipboard.writeText(textarea.value).then(function() {{
+                    const status = document.getElementById('copy_status_{key}');
+                    status.style.display = 'block';
+                    setTimeout(function() {{
+                        status.style.display = 'none';
+                    }}, 2000);
+                }}).catch(function(err) {{
+                    alert('Ошибка копирования: ' + err);
+                }});
+            }}
+        }}
+    </script>
+    """
+    components.html(html, height=60)
+
 st.title("📊 Когортный анализ, возвращаемость и отток")
 st.markdown("---")
 
@@ -2577,13 +2627,10 @@ if uploaded_file is not None:
                                 if common_clients:
                                     st.write(f"**Найдено: {len(common_clients)}**")
                                     clients_csv = "\n".join([str(client) for client in common_clients])
-                                    st.download_button(
-                                        label=f"💾 Скачать ({len(common_clients)})",
-                                        data=clients_csv,
-                                        file_name=f"клиенты_когорта_{selected_cohort}_период_{selected_period}.txt",
-                                        mime="text/plain",
-                                        use_container_width=True,
-                                        key="download_clients_unified_1"
+                                    create_copy_button(
+                                        clients_csv,
+                                        f"📋 Копировать ({len(common_clients)})",
+                                        "copy_clients_unified_1"
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
@@ -2612,13 +2659,10 @@ if uploaded_file is not None:
                                 if accumulation_clients:
                                     st.write(f"**Найдено: {len(accumulation_clients)}**")
                                     clients_csv = "\n".join([str(client) for client in accumulation_clients])
-                                    st.download_button(
-                                        label=f"💾 Скачать ({len(accumulation_clients)})",
-                                        data=clients_csv,
-                                        file_name=f"накопленные_клиенты_когорта_{selected_cohort}_период_{selected_period}.txt",
-                                        mime="text/plain",
-                                        use_container_width=True,
-                                        key="download_clients_unified_2"
+                                    create_copy_button(
+                                        clients_csv,
+                                        f"📋 Копировать ({len(accumulation_clients)})",
+                                        "copy_clients_unified_2"
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
@@ -2647,13 +2691,10 @@ if uploaded_file is not None:
                                 if accumulation_clients:
                                     st.write(f"**Найдено: {len(accumulation_clients)}**")
                                     clients_csv = "\n".join([str(client) for client in accumulation_clients])
-                                    st.download_button(
-                                        label=f"💾 Скачать ({len(accumulation_clients)})",
-                                        data=clients_csv,
-                                        file_name=f"накопленные_клиенты_проценты_когорта_{selected_cohort}_период_{selected_period}.txt",
-                                        mime="text/plain",
-                                        use_container_width=True,
-                                        key="download_clients_unified_3"
+                                    create_copy_button(
+                                        clients_csv,
+                                        f"📋 Копировать ({len(accumulation_clients)})",
+                                        "copy_clients_unified_3"
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
@@ -2682,13 +2723,10 @@ if uploaded_file is not None:
                                 if inflow_clients:
                                     st.write(f"**Найдено: {len(inflow_clients)}**")
                                     clients_csv = "\n".join([str(client) for client in inflow_clients])
-                                    st.download_button(
-                                        label=f"💾 Скачать ({len(inflow_clients)})",
-                                        data=clients_csv,
-                                        file_name=f"приток_клиентов_когорта_{selected_cohort}_период_{selected_period}.txt",
-                                        mime="text/plain",
-                                        use_container_width=True,
-                                        key="download_clients_unified_4"
+                                    create_copy_button(
+                                        clients_csv,
+                                        f"📋 Копировать ({len(inflow_clients)})",
+                                        "copy_clients_unified_4"
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
@@ -2711,13 +2749,10 @@ if uploaded_file is not None:
                                 if churn_clients:
                                     st.write(f"**Найдено: {len(churn_clients)}**")
                                     clients_csv = "\n".join([str(client) for client in churn_clients])
-                                    st.download_button(
-                                        label=f"💾 Скачать ({len(churn_clients)})",
-                                        data=clients_csv,
-                                        file_name=f"отток_клиентов_когорта_{selected_cohort}.txt",
-                                        mime="text/plain",
-                                        use_container_width=True,
-                                        key="download_clients_unified_5"
+                                    create_copy_button(
+                                        clients_csv,
+                                        f"📋 Копировать ({len(churn_clients)})",
+                                        "copy_clients_unified_5"
                                     )
                                 else:
                                     st.info(f"❌ Нет данных")
@@ -2731,13 +2766,10 @@ if uploaded_file is not None:
                                 
                                 if all_churn_clients:
                                     all_clients_csv = "\n".join([str(client) for client in sorted(all_churn_clients)])
-                                    st.download_button(
-                                        label=f"💾 Скачать коды клиентов оттока всех когорт ({len(all_churn_clients)})",
-                                        data=all_clients_csv,
-                                        file_name=f"отток_клиентов_все_когорты.txt",
-                                        mime="text/plain",
-                                        use_container_width=True,
-                                        key="download_all_churn_clients"
+                                    create_copy_button(
+                                        all_clients_csv,
+                                        f"📋 Копировать коды клиентов оттока всех когорт ({len(all_churn_clients)})",
+                                        "copy_all_churn_clients"
                                     )
                     
                     # Шестой блок - Присутствие клиентов оттока в других категориях
@@ -2885,6 +2917,8 @@ if uploaded_file is not None:
                                 # Для каждой когорты рассчитываем метрики
                                 churn_table = st.session_state.churn_table
                                 client_cohorts_cache = st.session_state.get('client_cohorts_cache', None)
+                                # Собираем всех клиентов оттока из сети для всех когорт
+                                all_network_churn_clients = set()
                                 for cohort_period in sorted_periods:
                                     # Получаем клиентов оттока для этой когорты
                                     churn_clients_set_cohort = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_period, period_clients_cache, client_cohorts_cache))
@@ -2926,6 +2960,10 @@ if uploaded_file is not None:
                                     # % оттока из сети
                                     network_churn_percent_cohort = (network_churn_by_cohort[cohort_period] / cohort_size_cohort * 100) if cohort_size_cohort > 0 else 0
                                     network_churn_percent_by_cohort[cohort_period] = network_churn_percent_cohort
+                                    
+                                    # Собираем клиентов оттока из сети для этой когорты
+                                    network_churn_clients_cohort = churn_clients_set_cohort - all_category_clients_after_cohort
+                                    all_network_churn_clients.update(network_churn_clients_cohort)
                                 
                                 # Создаем таблицу для сохранения в session_state
                                 summary_table_excel = pd.DataFrame({
@@ -2955,6 +2993,16 @@ if uploaded_file is not None:
                                 
                                 # Новый интерфейс: слева выбор когорты, справа таблица
                                 st.markdown("### 📊 Присутствие клиентов оттока когорты в других категориях товаров")
+                                
+                                # Кнопка копирования всех кодов клиентов оттока из сети
+                                if all_network_churn_clients:
+                                    all_network_churn_clients_list = sorted(list(all_network_churn_clients))
+                                    all_network_churn_clients_csv = "\n".join([str(client) for client in all_network_churn_clients_list])
+                                    create_copy_button(
+                                        all_network_churn_clients_csv,
+                                        f"📋 Копировать все коды клиентов оттока из сети ({len(all_network_churn_clients_list)})",
+                                        "copy_all_network_churn_clients"
+                                    )
                                 
                                 col_cohort_select, col_table = st.columns([1, 4])
                                 
@@ -3030,16 +3078,13 @@ if uploaded_file is not None:
                                     """
                                     st.markdown(metrics_html, unsafe_allow_html=True)
                                     
-                                    # Кнопка скачивания кодов клиентов оттока из сети
+                                    # Кнопка копирования кодов клиентов оттока из сети
                                     if network_churn_clients_list:
                                         network_churn_clients_csv = "\n".join([str(client) for client in network_churn_clients_list])
-                                        st.download_button(
-                                            label=f"💾 Скачать коды клиентов оттока из сети ({len(network_churn_clients_list)})",
-                                            data=network_churn_clients_csv,
-                                            file_name=f"отток_из_сети_когорта_{selected_cohort}.txt",
-                                            mime="text/plain",
-                                            use_container_width=True,
-                                            key=f"download_network_churn_{selected_cohort}"
+                                        create_copy_button(
+                                            network_churn_clients_csv,
+                                            f"📋 Копировать коды клиентов оттока из сети ({len(network_churn_clients_list)})",
+                                            f"copy_network_churn_{selected_cohort}"
                                         )
                                     else:
                                         st.info("ℹ️ Отток из сети равен 0 или все клиенты оттока присутствуют в других категориях")
