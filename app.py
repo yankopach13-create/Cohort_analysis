@@ -1649,8 +1649,8 @@ if uploaded_file is not None:
                                     if 'category_summary_table' in st.session_state and st.session_state.category_summary_table is not None:
                                         summary_table_excel = st.session_state.category_summary_table.copy()
                                         summary_table_excel.index.name = 'Метрика / Когорта'
-                                        summary_table_excel.to_excel(writer, sheet_name="7. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
-                                        worksheet_cohorts = writer.sheets["7. Присутствие когорты в других категориях"]
+                                        summary_table_excel.to_excel(writer, sheet_name="6. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
+                                        worksheet_cohorts = writer.sheets["6. Присутствие когорты в других категориях"]
                                         
                                         # Форматируем верхнюю таблицу
                                         for row_idx in range(start_row_cohorts + 2, start_row_cohorts + len(summary_table_excel.index) + 2):
@@ -1678,8 +1678,8 @@ if uploaded_file is not None:
                                         category_table_excel.index.name = 'Категория / Когорта'
                                         
                                         if worksheet_cohorts is None:
-                                            category_table_excel.to_excel(writer, sheet_name="7. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
-                                            worksheet_cohorts = writer.sheets["7. Присутствие когорты в других категориях"]
+                                            category_table_excel.to_excel(writer, sheet_name="6. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
+                                            worksheet_cohorts = writer.sheets["6. Присутствие когорты в других категориях"]
                                         else:
                                             category_table_excel.to_excel(writer, sheet_name="7. Присутствие когорты в других категориях", startrow=start_row_cohorts, index=True)
                                         
@@ -1703,6 +1703,8 @@ if uploaded_file is not None:
                                         # Определяем периоды начиная с выбранной когорты
                                         cohort_index = sorted_periods.index(selected_cohort) if selected_cohort in sorted_periods else 0
                                         periods_from_cohort = sorted_periods[cohort_index:]
+                                        # Периоды ПОСЛЕ когорты (исключая период когорты) - для столбцов таблицы
+                                        periods_after_cohort = periods_from_cohort[1:] if len(periods_from_cohort) > 1 else []
                                         
                                         # Получаем клиентов оттока для выбранной когорты
                                         period_clients_cache = st.session_state.get('period_clients_cache', None)
@@ -1710,16 +1712,16 @@ if uploaded_file is not None:
                                         churn_clients_set = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, period_clients_cache, client_cohorts_cache))
                                         churn_clients_set = {str(client) for client in churn_clients_set}
                                         
-                                        # Создаем таблицу: категории по строкам, периоды по столбцам
-                                        category_period_table = pd.DataFrame(index=categories, columns=periods_from_cohort)
+                                        # Создаем таблицу: категории по строкам, периоды ПОСЛЕ когорты по столбцам
+                                        category_period_table = pd.DataFrame(index=categories, columns=periods_after_cohort)
                                         
                                         # Словари для итогов
-                                        period_unique_clients = {period: set() for period in periods_from_cohort}
+                                        period_unique_clients = {period: set() for period in periods_after_cohort}
                                         category_unique_clients = {category: set() for category in categories}
                                         
                                         # Если есть столбец "Год-месяц", используем его для фильтрации по периодам
                                         if year_month_col_cat is not None:
-                                            for period in periods_from_cohort:
+                                            for period in periods_after_cohort:
                                                 period_data = df_categories[df_categories[year_month_col_cat] == period]
                                                 
                                                 for category in categories:
@@ -1744,7 +1746,7 @@ if uploaded_file is not None:
                                                 client_codes = set(category_data[client_code_col].dropna().astype(str).unique())
                                                 category_clients_dict[category] = client_codes
                                             
-                                            for period in periods_from_cohort:
+                                            for period in periods_after_cohort:
                                                 for category in categories:
                                                     category_clients_set = category_clients_dict.get(category, set())
                                                     intersection = churn_clients_set & category_clients_set
@@ -1758,7 +1760,7 @@ if uploaded_file is not None:
                                         
                                         # Создаем итоговую строку и столбец
                                         totals_row = pd.Series(
-                                            {period: len(period_unique_clients[period]) for period in periods_from_cohort},
+                                            {period: len(period_unique_clients[period]) for period in periods_after_cohort},
                                             name='Итого клиентов'
                                         )
                                         
@@ -1777,7 +1779,7 @@ if uploaded_file is not None:
                                         if year_month_col_cat is not None:
                                             for category in categories:
                                                 category_data = df_categories[df_categories[group_col] == category]
-                                                category_data_filtered = category_data[category_data[year_month_col_cat].isin(periods_from_cohort)]
+                                                category_data_filtered = category_data[category_data[year_month_col_cat].isin(periods_after_cohort)]
                                                 category_clients = set(category_data_filtered[client_code_col].dropna().astype(str).unique())
                                                 all_category_clients.update(category_clients)
                                         else:
@@ -1792,7 +1794,7 @@ if uploaded_file is not None:
                                         # Переупорядочиваем строки и столбцы
                                         new_index = ['Итого клиентов'] + [cat for cat in categories]
                                         category_period_table_with_totals = category_period_table_with_totals.reindex(new_index)
-                                        new_columns = ['Итого'] + list(periods_from_cohort)
+                                        new_columns = ['Итого'] + list(periods_after_cohort)
                                         category_period_table_with_totals = category_period_table_with_totals[new_columns]
                                         
                                         # Добавляем заголовок когорты
@@ -1800,11 +1802,11 @@ if uploaded_file is not None:
                                             # Создаем новый лист
                                             category_period_table_with_totals.to_excel(
                                                 writer, 
-                                                sheet_name="7. Присутствие когорты в других категориях", 
+                                                sheet_name="6. Присутствие когорты в других категориях", 
                                                 startrow=start_row_cohorts, 
                                                 index=True
                                             )
-                                            worksheet_cohorts = writer.sheets["7. Присутствие когорты в других категориях"]
+                                            worksheet_cohorts = writer.sheets["6. Присутствие когорты в других категориях"]
                                             # Добавляем заголовок когорты
                                             last_col_letter = get_column_letter(len(new_columns) + 1)
                                             worksheet_cohorts.cell(row=start_row_cohorts + 1, column=1, value=f"Когорта: {selected_cohort}")
@@ -1826,7 +1828,7 @@ if uploaded_file is not None:
                                             # Записываем таблицу на тот же лист
                                             category_period_table_with_totals.to_excel(
                                                 writer, 
-                                                sheet_name="7. Присутствие когорты в других категориях", 
+                                                sheet_name="6. Присутствие когорты в других категориях", 
                                                 startrow=start_row_cohorts, 
                                                 index=True
                                             )
@@ -1847,7 +1849,7 @@ if uploaded_file is not None:
                                         # Обновляем начальную строку для следующей таблицы (таблица + 2 пустые строки)
                                         start_row_cohorts = start_row_cohorts + len(category_period_table_with_totals.index) + 3
                                 
-                                # Таблица 8: Сводная таблица по всем когортам
+                                # Таблица 7: Сводная таблица по всем когортам
                                 # Таблица 8 всегда создаётся с базовыми метриками (1-5)
                                 # Метрики 6-9 добавляются только при наличии данных категорий
                                 if st.session_state.get('churn_table') is not None:
@@ -1941,8 +1943,8 @@ if uploaded_file is not None:
                                     summary_df.index.name = 'Метрика / Когорта'
                                     
                                     # Записываем в Excel
-                                    summary_df.to_excel(writer, sheet_name="8. Сводная таблица по всем когортам", startrow=0, index=True)
-                                    worksheet_summary = writer.sheets["8. Сводная таблица по всем когортам"]
+                                    summary_df.to_excel(writer, sheet_name="7. Сводная таблица по всем когортам", startrow=0, index=True)
+                                    worksheet_summary = writer.sheets["7. Сводная таблица по всем когортам"]
                                     
                                     # Форматируем таблицу
                                     for row_idx in range(2, len(summary_df.index) + 2):
