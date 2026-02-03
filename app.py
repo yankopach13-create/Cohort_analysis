@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from config import PAGE_CONFIG
 
 # Настройка страницы
@@ -104,27 +105,52 @@ for i in range(0, len(tools), 2):
             </div>
                                     """, unsafe_allow_html=True)
                                 
-            # Кнопка для перехода к инструменту
-            # Используем правильный формат для Streamlit Pages
+            # Кнопка-ссылка для открытия в новом окне
             page_name = tool['page']
             
-            # Создаем кнопку с правильной навигацией
-            if st.button(f"🔄 Открыть инструмент", key=f"btn_{i+j}", use_container_width=True):
-                # Используем правильный формат для Streamlit Pages: "pages/filename" без расширения
-                try:
-                    st.switch_page(f"pages/{page_name}")
-                except:
-                    # Если не работает, показываем информацию о прямой ссылке
-                    st.info(f"💡 Если кнопка не работает, используйте прямую ссылку в адресной строке: `https://client-analytics.streamlit.app/pages/{page_name}`")
+            # Определяем URL в зависимости от окружения
+            if os.getenv('STREAMLIT_SERVER_BASE_URL') or os.getenv('STREAMLIT_SHARING'):
+                # На Streamlit Cloud
+                base_url = "https://client-analytics.streamlit.app"
+            else:
+                # Локально - используем относительный путь
+                base_url = ""
             
-            # Дополнительная информация о навигации
-            with st.expander("ℹ️ Как перейти к инструменту?"):
-                st.markdown(f"""
-                **Способы навигации:**
-                1. Нажмите кнопку "🔄 Открыть инструмент" выше
-                2. Используйте прямую ссылку в адресной строке браузера: 
-                   `https://client-analytics.streamlit.app/pages/{page_name}`
-                """)
+            page_url = f"{base_url}/pages/{page_name}" if base_url else f"/pages/{page_name}"
+            
+            # Создаем стилизованную кнопку-ссылку, которая откроется в новом окне
+            st.markdown(f"""
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="{page_url}" target="_blank" rel="noopener noreferrer" style="
+                    display: inline-block;
+                    width: 100%;
+                    padding: 12px 30px;
+                    background-color: #4CAF50;
+                    color: white !important;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    text-align: center;
+                    transition: background-color 0.3s ease;
+                    cursor: pointer;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                " onmouseover="this.style.backgroundColor='#45a049'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.3)'" 
+                   onmouseout="this.style.backgroundColor='#4CAF50'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.2)'">
+                    🔄 Открыть инструмент (в новом окне)
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Альтернативная ссылка для открытия в текущем окне
+            st.markdown(f"""
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="{page_url}" target="_self" style="
+                    color: #4CAF50;
+                    text-decoration: none;
+                    font-size: 0.9em;
+                ">Или откройте в текущем окне</a>
+            </div>
+            """, unsafe_allow_html=True)
 
 # Если инструментов нечетное количество, добавляем пустую колонку
 if len(tools) % 2 == 1:
