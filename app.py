@@ -37,6 +37,10 @@ def create_copy_button(text, button_label, key):
     """Создает кнопку для копирования текста в буфер обмена"""
     import streamlit.components.v1 as components
     import json
+    import re
+    
+    # Очищаем key от специальных символов для использования в JavaScript
+    safe_key = re.sub(r'[^a-zA-Z0-9_]', '_', str(key))
     
     # Экранируем текст для безопасной вставки в JavaScript
     # Используем JSON для правильного экранирования
@@ -44,7 +48,7 @@ def create_copy_button(text, button_label, key):
     
     html = f"""
     <div data-testid="stButton" style="width: 100%; margin: 5px 0;">
-        <button onclick="copyToClipboard_{key}()" style="
+        <button id="copy_btn_{safe_key}" onclick="copyToClipboard_{safe_key}()" style="
             width: 100%;
             padding: 12px 16px;
             background: #f8f9fa !important;
@@ -68,58 +72,124 @@ def create_copy_button(text, button_label, key):
             transition: all 0.3s ease !important;
             margin: 0 !important;
             box-sizing: border-box !important;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)'; this.style.background='#ffffff'; this.style.borderColor='#d0d0d0';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'; this.style.background='#f8f9fa'; this.style.borderColor='#e0e0e0';" onmousedown="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)';" onmouseup="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)';">
+            position: relative !important;
+        " onmouseover="if (!this.classList.contains('copied')) {{ this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)'; this.style.background='#ffffff'; this.style.borderColor='#d0d0d0'; }}" onmouseout="if (!this.classList.contains('copied')) {{ this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'; this.style.background='#f8f9fa'; this.style.borderColor='#e0e0e0'; }}" onmousedown="if (!this.classList.contains('copied')) {{ this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 0, 0, 0.05)'; }}" onmouseup="if (!this.classList.contains('copied')) {{ this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0, 0, 0, 0.1)'; }}">
             <div style="display: flex; align-items: center; justify-content: center; width: 100%;">
-                <p style="margin: 0; padding: 0; font-size: 0.85rem; font-weight: 400; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">{button_label}</p>
+                <p id="copy_btn_text_{safe_key}" style="margin: 0; padding: 0; font-size: 0.85rem; font-weight: 400; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;">{button_label}</p>
             </div>
         </button>
-        <div id="copy_status_{key}" style="margin-top: 5px; color: rgb(0, 128, 0); font-size: 0.8rem; display: none; text-align: center;">✓ Скопировано!</div>
+        <div id="copy_status_{safe_key}" style="
+            margin-top: 8px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        ">
+            <span style="font-size: 1.2em; margin-right: 8px;">✓</span>
+            <span>Коды клиентов скопированы в буфер обмена!</span>
+        </div>
+        <style>
+            @keyframes slideIn {{
+                from {{
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }}
+                to {{
+                    opacity: 1;
+                    transform: translateY(0);
+                }}
+            }}
+            @keyframes pulse {{
+                0% {{ transform: scale(1); }}
+                50% {{ transform: scale(1.05); }}
+                100% {{ transform: scale(1); }}
+            }}
+            .copy-success {{
+                background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+                border-color: #4CAF50 !important;
+                color: white !important;
+                animation: pulse 0.5s ease-in-out;
+            }}
+        </style>
     </div>
     <script>
-        const textToCopy_{key} = {text_json};
+        const textToCopy_{safe_key} = {text_json};
         
-        function copyToClipboard_{key}() {{
-            const text = textToCopy_{key};
+        function copyToClipboard_{safe_key}() {{
+            const text = textToCopy_{safe_key};
+            const button = document.getElementById('copy_btn_{safe_key}');
+            const buttonText = document.getElementById('copy_btn_text_{safe_key}');
+            const status = document.getElementById('copy_status_{safe_key}');
+            const originalText = buttonText.innerHTML;
+            
+            // Функция для показа успешного копирования
+            function showSuccess() {{
+                // Изменяем внешний вид кнопки
+                button.classList.add('copied');
+                button.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                button.style.borderColor = '#4CAF50';
+                button.style.color = 'white';
+                button.style.transform = 'scale(0.98)';
+                buttonText.innerHTML = '✓ Скопировано!';
+                
+                // Показываем статус сообщение
+                status.style.display = 'block';
+                
+                // Возвращаем исходное состояние через 2.5 секунды
+                setTimeout(function() {{
+                    button.classList.remove('copied');
+                    button.style.background = '#f8f9fa';
+                    button.style.borderColor = '#e0e0e0';
+                    button.style.color = '#333';
+                    button.style.transform = 'translateY(0)';
+                    buttonText.innerHTML = originalText;
+                    status.style.display = 'none';
+                }}, 2500);
+            }}
             
             // Пробуем использовать современный API
             if (navigator.clipboard && navigator.clipboard.writeText) {{
                 navigator.clipboard.writeText(text).then(function() {{
-                    const status = document.getElementById('copy_status_{key}');
-                    status.style.display = 'block';
-                    setTimeout(function() {{
-                        status.style.display = 'none';
-                    }}, 2000);
+                    showSuccess();
                 }}).catch(function(err) {{
+                    console.error('Clipboard API error:', err);
                     // Fallback на старый метод
-                    fallbackCopy_{key}(text);
+                    fallbackCopy_{safe_key}(text, showSuccess);
                 }});
             }} else {{
                 // Fallback для старых браузеров
-                fallbackCopy_{key}(text);
+                fallbackCopy_{safe_key}(text, showSuccess);
             }}
         }}
         
-        function fallbackCopy_{key}(text) {{
+        function fallbackCopy_{safe_key}(text, successCallback) {{
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';
             textarea.style.left = '-999999px';
             textarea.style.top = '-999999px';
+            textarea.style.opacity = '0';
             document.body.appendChild(textarea);
             textarea.focus();
             textarea.select();
+            
             try {{
                 const successful = document.execCommand('copy');
                 if (successful) {{
-                    const status = document.getElementById('copy_status_{key}');
-                    status.style.display = 'block';
-                    setTimeout(function() {{
-                        status.style.display = 'none';
-                    }}, 2000);
+                    successCallback();
                 }} else {{
                     alert('Не удалось скопировать. Пожалуйста, скопируйте вручную.');
                 }}
             }} catch(err) {{
+                console.error('Copy command error:', err);
                 alert('Ошибка копирования: ' + err);
             }} finally {{
                 document.body.removeChild(textarea);
@@ -127,7 +197,7 @@ def create_copy_button(text, button_label, key):
         }}
     </script>
     """
-    components.html(html, height=70)
+    components.html(html, height=100)
 
 st.title("📊 Когортный анализ, возвращаемость и отток")
 st.markdown("---")
