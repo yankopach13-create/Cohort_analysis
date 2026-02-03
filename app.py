@@ -101,9 +101,11 @@ for i in range(0, len(tools), 2):
             """, unsafe_allow_html=True)
             
             # Кнопка для перехода к инструменту
+            # В Streamlit Pages правильный формат: "pages/filename" (без расширения .py)
             if st.button(f"Открыть инструмент", key=f"btn_{i+j}", use_container_width=True):
-                # Переход к странице инструмента
-                st.switch_page(f"pages/{tool['page']}.py")
+                # Используем правильный формат для Streamlit Pages
+                # Формат должен быть точно: "pages/cohort_analysis" (без .py)
+                st.switch_page(f"pages/{tool['page']}")
 
 # Если инструментов нечетное количество, добавляем пустую колонку
 if len(tools) % 2 == 1:
