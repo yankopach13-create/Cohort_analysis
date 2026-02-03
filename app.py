@@ -18,7 +18,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("""
-    <a href="/pages/1__Когортный_анализ" target="_self" style="text-decoration: none; color: inherit;">
+    <a href="?page=pages/1__Когортный_анализ" style="text-decoration: none; color: inherit; display: block;">
         <div style="text-align: center; padding: 20px; border: 2px solid #4CAF50; border-radius: 10px; background: #f1f8f4; cursor: pointer; transition: all 0.3s ease;" 
              onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(76, 175, 80, 0.2)';" 
              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">

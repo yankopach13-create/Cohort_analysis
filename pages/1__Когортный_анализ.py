@@ -14,31 +14,36 @@ st.set_page_config(
     layout="wide"
 )
 
-# Импортируем функции из utils (безопасный импорт)
+# Упрощенный импорт из utils (временно упрощен для диагностики)
+# Если проблема с загрузкой сохраняется, можно временно использовать заглушку
 try:
-    # Пробуем импорт напрямую
-    from utils.copy_button import create_copy_button
-except ImportError:
-    try:
-        # Если не работает, добавляем путь безопасно
+    import importlib.util
+    # Пробуем найти модуль utils безопасно
+    current_file = __file__ if '__file__' in globals() else None
+    if current_file:
         try:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-        except:
-            current_dir = os.getcwd()
-        
-        # Определяем родительскую директорию
-        if os.path.basename(current_dir) == 'pages':
-            parent_dir = os.path.dirname(current_dir)
-        else:
-            parent_dir = current_dir
-        
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
+            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(current_file)))
+            utils_path = os.path.join(parent_dir, 'utils', 'copy_button.py')
+            if os.path.exists(utils_path):
+                spec = importlib.util.spec_from_file_location("copy_button", utils_path)
+                copy_button_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(copy_button_module)
+                create_copy_button = copy_button_module.create_copy_button
+            else:
+                raise ImportError("utils/copy_button.py not found")
+        except Exception:
+            # Fallback - пробуем обычный импорт
+            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(current_file)))
+            if parent_dir not in sys.path:
+                sys.path.insert(0, parent_dir)
+            from utils.copy_button import create_copy_button
+    else:
+        # Если __file__ недоступен, пробуем обычный импорт
         from utils.copy_button import create_copy_button
-    except ImportError:
-        # Заглушка если импорт не работает
-        def create_copy_button(text, button_label, key):
-            st.button(button_label, key=key, disabled=True)
+except Exception:
+    # Заглушка если импорт не работает (временно для диагностики)
+    def create_copy_button(text, button_label, key):
+        st.button(button_label, key=key, disabled=True)
 
 # Ленивые импорты для тяжелых библиотек (загружаются только при необходимости)
 def _get_openpyxl():
