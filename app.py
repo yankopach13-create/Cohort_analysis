@@ -100,12 +100,31 @@ for i in range(0, len(tools), 2):
             </div>
             """, unsafe_allow_html=True)
             
-            # Кнопка для перехода к инструменту
-            # В Streamlit Pages правильный формат: "pages/filename" (без расширения .py)
-            if st.button(f"Открыть инструмент", key=f"btn_{i+j}", use_container_width=True):
-                # Используем правильный формат для Streamlit Pages
-                # Формат должен быть точно: "pages/cohort_analysis" (без .py)
-                st.switch_page(f"pages/{tool['page']}")
+            # Используем markdown ссылку для навигации
+            # В Streamlit Pages файлы доступны через боковое меню автоматически
+            # Для программной навигации используем ссылку с правильным форматом URL
+            page_name = tool['page']
+            
+            # Создаем стилизованную кнопку-ссылку
+            # Формат URL для Streamlit Pages: /pages/filename (без расширения .py)
+            st.markdown(f"""
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="/pages/{page_name}" style="
+                    display: inline-block;
+                    width: 100%;
+                    padding: 12px 30px;
+                    background-color: #4CAF50;
+                    color: white !important;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    text-align: center;
+                    transition: background-color 0.3s ease;
+                " onmouseover="this.style.backgroundColor='#45a049'" onmouseout="this.style.backgroundColor='#4CAF50'">
+                    Открыть инструмент
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
 
 # Если инструментов нечетное количество, добавляем пустую колонку
 if len(tools) % 2 == 1:
