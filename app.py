@@ -1897,10 +1897,10 @@ if uploaded_file is not None:
                                     group_col = col
                                     break
                             
-                            # Ищем столбец Год-месяц
+                            # Ищем столбец периода (Год-месяц или Год-неделя)
                             for col in df_categories.columns:
                                 col_lower = str(col).lower().strip()
-                                if ('год' in col_lower and 'месяц' in col_lower) or ('год-месяц' in col_lower):
+                                if 'год' in col_lower and ('месяц' in col_lower or 'неделя' in col_lower):
                                     year_month_col = col
                                     break
                             
@@ -1931,7 +1931,7 @@ if uploaded_file is not None:
                             elif client_code_col is None:
                                 st.error("❌ Не найден столбец 'Код клиента'. Убедитесь, что в файле есть столбец с названием, содержащим 'Код' и 'клиент'.")
                             elif year_month_col is None:
-                                st.warning("⚠️ Не найден столбец 'Год-месяц'. Данные будут обработаны без фильтрации по периоду.")
+                                st.warning("⚠️ Не найден столбец периода ('Год-месяц' или 'Год-неделя'). Данные будут обработаны без фильтрации по периоду.")
                             else:
                                 # Получаем уникальные категории
                                 categories = df_categories[group_col].dropna().unique()
