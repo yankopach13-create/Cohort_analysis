@@ -277,3 +277,22 @@ def get_sorted_periods(df, year_month_col):
         sorted_periods = sorted([str(p) for p in unique_periods])
     return sorted_periods
 
+
+def get_period_after_label(sorted_periods):
+    """Возвращает подпись периода в родительном падеже для метрик: 'недели' или 'месяца'.
+    
+    Используется в подписях вида «после {label} когорты» в зависимости от того,
+    построен ли анализ по неделям или по месяцам.
+    
+    Args:
+        sorted_periods: отсортированный список периодов (из когортного анализа)
+        
+    Returns:
+        str: 'недели' если периоды — недели, иначе 'месяца'
+    """
+    if not sorted_periods:
+        return 'месяца'
+    parsed = parse_period(str(sorted_periods[0]).strip())
+    # type: 0 = месяц, 1 = неделя
+    return 'недели' if parsed[2] == 1 else 'месяца'
+
