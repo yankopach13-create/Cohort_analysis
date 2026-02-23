@@ -22,7 +22,13 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 # Импорты из новых модулей
 from config import PAGE_CONFIG, TEMPLATE_IMAGE_PATHS, CATEGORIES_TEMPLATE_IMAGE_PATHS
-from utils import parse_period, parse_year_month, create_copy_button, detect_columns, get_period_after_label
+from utils import parse_period, parse_year_month, create_copy_button, detect_columns
+try:
+    from utils import get_period_after_label
+except ImportError:
+    def get_period_after_label(sorted_periods):
+        """Запасной вариант, если в utils нет функции (старая версия на Cloud)."""
+        return 'месяца'
 from data_processing import (
     get_cohort_clients, get_accumulation_clients, get_client_cohorts,
     get_churn_clients, get_inflow_clients, build_churn_table,
