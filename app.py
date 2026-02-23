@@ -1729,7 +1729,7 @@ if uploaded_file is not None:
                             if selected_cohort and selected_period:
                                 period_clients_cache = st.session_state.get('period_clients_cache', None)
                                 client_cohorts_cache = st.session_state.get('client_cohorts_cache', None)
-                                accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache, client_cohorts_cache)
+                                accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache=period_clients_cache, client_cohorts_cache=client_cohorts_cache)
                                 
                                 if accumulation_clients:
                                     st.write(f"**Найдено: {len(accumulation_clients)}**")
@@ -1762,7 +1762,7 @@ if uploaded_file is not None:
                             if selected_cohort and selected_period:
                                 period_clients_cache = st.session_state.get('period_clients_cache', None)
                                 client_cohorts_cache = st.session_state.get('client_cohorts_cache', None)
-                                accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache, client_cohorts_cache)
+                                accumulation_clients = get_accumulation_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, selected_period, period_clients_cache=period_clients_cache, client_cohorts_cache=client_cohorts_cache)
                                 
                                 if accumulation_clients:
                                     st.write(f"**Найдено: {len(accumulation_clients)}**")
