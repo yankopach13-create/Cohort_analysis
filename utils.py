@@ -253,3 +253,27 @@ def detect_columns(df):
     
     return year_month_col, client_col
 
+
+def get_sorted_periods(df, year_month_col):
+    """Возвращает список периодов в том же порядке, что и matrix_builder (для согласованной когорты).
+    
+    Args:
+        df: DataFrame с данными
+        year_month_col: название столбца с периодом
+        
+    Returns:
+        list: отсортированный список периодов
+    """
+    unique_periods = df[year_month_col].dropna().unique()
+    periods_with_sort = [(p, parse_period(str(p).strip())) for p in unique_periods]
+    valid_periods = [(p, parsed) for p, parsed in periods_with_sort if parsed != (0, 0, 0)]
+    invalid_periods = [p for p, parsed in periods_with_sort if parsed == (0, 0, 0)]
+    if valid_periods:
+        valid_periods.sort(key=lambda x: (x[1][0], x[1][2], x[1][1]))
+        sorted_periods = [p[0] for p in valid_periods]
+        if invalid_periods:
+            sorted_periods.extend(sorted(invalid_periods))
+    else:
+        sorted_periods = sorted([str(p) for p in unique_periods])
+    return sorted_periods
+

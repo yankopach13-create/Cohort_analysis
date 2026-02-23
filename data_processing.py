@@ -2,42 +2,49 @@
 Модуль для обработки данных и работы с клиентами
 """
 import pandas as pd
+from utils import get_sorted_periods
 
 
-def get_cohort_clients(df, year_month_col, client_col, cohort_period, target_period, period_clients_cache=None):
-    """Получает коды клиентов из когорты, которые были в целевом периоде.
+def get_cohort_clients(df, year_month_col, client_col, cohort_period, target_period, period_clients_cache=None, client_cohorts_cache=None, sorted_periods=None):
+    """Получает коды клиентов из когорты (период первой покупки), которые были в целевом периоде.
     
     Args:
         df: DataFrame с данными
         year_month_col: название столбца с периодом
         client_col: название столбца с кодом клиента
-        cohort_period: период когорты
+        cohort_period: период когорты (первая покупка)
         target_period: целевой период
-        period_clients_cache: кэш словарь период -> множество клиентов
+        period_clients_cache: кэш период -> множество клиентов
+        client_cohorts_cache: кэш клиент -> период когорты (первая покупка)
+        sorted_periods: отсортированный список периодов (нужен при client_cohorts_cache=None)
         
     Returns:
         list: отсортированный список кодов клиентов
     """
+    if client_cohorts_cache is None:
+        if sorted_periods is None:
+            sorted_periods = get_sorted_periods(df, year_month_col)
+        client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
+    clients_in_cohort = {c for c, first in client_cohorts_cache.items() if first == cohort_period}
     if period_clients_cache:
-        clients_in_cohort = period_clients_cache.get(cohort_period, set())
         clients_in_period = period_clients_cache.get(target_period, set())
     else:
-        clients_in_cohort = set(df[df[year_month_col] == cohort_period][client_col].dropna().unique())
         clients_in_period = set(df[df[year_month_col] == target_period][client_col].dropna().unique())
     return sorted(list(clients_in_cohort & clients_in_period))
 
 
-def get_accumulation_clients(df, year_month_col, client_col, sorted_periods, cohort_period, target_period, period_clients_cache=None):
-    """Получает накопленные коды клиентов из когорты до целевого периода включительно.
+def get_accumulation_clients(df, year_month_col, client_col, sorted_periods, cohort_period, target_period, period_clients_cache=None, client_cohorts_cache=None):
+    """Получает накопленные коды клиентов из когорты (период первой покупки) до целевого периода включительно.
     
     Args:
         df: DataFrame с данными
         year_month_col: название столбца с периодом
         client_col: название столбца с кодом клиента
         sorted_periods: отсортированный список периодов
-        cohort_period: период когорты
+        cohort_period: период когорты (первая покупка)
         target_period: целевой период
-        period_clients_cache: кэш словарь период -> множество клиентов
+        period_clients_cache: кэш период -> множество клиентов
+        client_cohorts_cache: кэш клиент -> период когорты (первая покупка)
         
     Returns:
         list: отсортированный список кодов клиентов
@@ -49,13 +56,10 @@ def get_accumulation_clients(df, year_month_col, client_col, sorted_periods, coh
     if cohort_idx < 0 or target_idx < 0 or target_idx <= cohort_idx:
         return []
     
-    # Получаем множество клиентов этой когорты
-    if period_clients_cache:
-        cohort_clients = period_clients_cache.get(cohort_period, set())
-    else:
-        cohort_clients = set(df[df[year_month_col] == cohort_period][client_col].dropna().unique())
+    if client_cohorts_cache is None:
+        client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
+    cohort_clients = {c for c, first in client_cohorts_cache.items() if first == cohort_period}
     
-    # Находим всех клиентов когорты, которые вернулись в любом периоде от следующего после когорты до целевого включительно
     returned_clients = set()
     for period in sorted_periods[cohort_idx + 1:target_idx + 1]:
         if period_clients_cache:
@@ -68,7 +72,7 @@ def get_accumulation_clients(df, year_month_col, client_col, sorted_periods, coh
 
 
 def get_client_cohorts(df, year_month_col, client_col, sorted_periods):
-    """Определяет когорту для каждого клиента (первый период появления).
+    """Определяет когорту для каждого клиента (первый период появления по порядку sorted_periods).
     
     Args:
         df: DataFrame с данными
@@ -79,22 +83,15 @@ def get_client_cohorts(df, year_month_col, client_col, sorted_periods):
     Returns:
         dict: словарь {client: cohort_period}
     """
-    # Создаем словарь индексов периодов для быстрого поиска
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
-    
-    # Фильтруем только валидные периоды и клиентов
     df_filtered = df[[year_month_col, client_col]].dropna()
-    
-    # Группируем по клиентам и находим минимальный период (первый по индексу)
-    # Используем groupby для эффективности
-    client_first_periods = df_filtered.groupby(client_col)[year_month_col].min()
-    
-    # Преобразуем в словарь, фильтруя только валидные периоды
     client_cohorts = {}
-    for client, first_period in client_first_periods.items():
-        if first_period in period_indices:
+    for client, group in df_filtered.groupby(client_col):
+        periods = group[year_month_col].dropna().unique()
+        valid = [p for p in periods if p in period_indices]
+        if valid:
+            first_period = min(valid, key=lambda p: period_indices[p])
             client_cohorts[client] = first_period
-    
     return client_cohorts
 
 
@@ -150,17 +147,18 @@ def get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_per
     return sorted(list(churn_clients))
 
 
-def get_inflow_clients(df, year_month_col, client_col, sorted_periods, cohort_period, target_period, period_clients_cache=None):
-    """Получает коды клиентов из когорты, которые вернулись именно в целевом периоде (новый приток).
+def get_inflow_clients(df, year_month_col, client_col, sorted_periods, cohort_period, target_period, period_clients_cache=None, client_cohorts_cache=None):
+    """Получает коды клиентов из когорты (период первой покупки), которые вернулись именно в целевом периоде (новый приток).
     
     Args:
         df: DataFrame с данными
         year_month_col: название столбца с периодом
         client_col: название столбца с кодом клиента
         sorted_periods: отсортированный список периодов
-        cohort_period: период когорты
+        cohort_period: период когорты (первая покупка)
         target_period: целевой период
-        period_clients_cache: кэш словарь период -> множество клиентов
+        period_clients_cache: кэш период -> множество клиентов
+        client_cohorts_cache: кэш клиент -> период когорты (первая покупка)
         
     Returns:
         list: отсортированный список кодов клиентов
@@ -172,24 +170,19 @@ def get_inflow_clients(df, year_month_col, client_col, sorted_periods, cohort_pe
     if cohort_idx < 0 or target_idx < 0 or target_idx <= cohort_idx:
         return []
     
-    # Получаем множество клиентов этой когорты
-    if period_clients_cache:
-        cohort_clients = period_clients_cache.get(cohort_period, set())
-    else:
-        cohort_clients = set(df[df[year_month_col] == cohort_period][client_col].dropna().unique())
+    if client_cohorts_cache is None:
+        client_cohorts_cache = get_client_cohorts(df, year_month_col, client_col, sorted_periods)
+    cohort_clients = {c for c, first in client_cohorts_cache.items() if first == cohort_period}
     
-    # Клиенты, которые вернулись в целевом периоде
     if period_clients_cache:
         target_period_clients = period_clients_cache.get(target_period, set())
     else:
         target_period_clients = set(df[df[year_month_col] == target_period][client_col].dropna().unique())
     returned_in_target = cohort_clients & target_period_clients
     
-    # Если это первый период после когорты, возвращаем всех вернувшихся
     if target_idx == cohort_idx + 1:
         return sorted(list(returned_in_target))
     
-    # Иначе исключаем тех, кто уже вернулся ранее
     prev_periods_clients = set()
     for period in sorted_periods[cohort_idx + 1:target_idx]:
         if period_clients_cache:
@@ -198,7 +191,6 @@ def get_inflow_clients(df, year_month_col, client_col, sorted_periods, cohort_pe
             period_clients = set(df[df[year_month_col] == period][client_col].dropna().unique())
         prev_periods_clients.update(cohort_clients & period_clients)
     
-    # Новые возвраты в целевом периоде (не возвращались ранее)
     new_returns = returned_in_target - prev_periods_clients
     return sorted(list(new_returns))
 
@@ -227,7 +219,7 @@ def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_mat
                        client_cohorts_cache=None, period_clients_cache=None):
     """Строит таблицу оттока клиентов для всех когорт.
     
-    Использует исходную логику: когорта = все клиенты из периода (не только первый период появления).
+    Когорта = период первой покупки клиента. Размер когорты и отток считаются по этой логике.
     
     Args:
         df: DataFrame с данными
@@ -251,33 +243,29 @@ def build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_mat
     last_period_idx = period_indices[last_period]
     
     for cohort_period in sorted_periods:
-        # 1. Когорта
         cohort = cohort_period
-        
-        # 2. Кол-во клиентов когорты (из матрицы когорт - все клиенты из этого периода)
         cohort_size = cohort_matrix.loc[cohort_period, cohort_period]
-        
-        # 3. Накопительное кол-во возврата за весь период
-        # Берем последний столбец (последний период) для этой когорты
         cohort_idx = period_indices[cohort_period]
+        is_last_cohort = (cohort_idx == last_period_idx)
         
-        if last_period_idx > cohort_idx:
-            # Если есть периоды после когорты, берем значение из матрицы накопления
-            total_returned = accumulation_matrix.loc[cohort_period, last_period]
-        else:
-            # Если это последняя когорта, возврат = 0
-            total_returned = 0
+        if is_last_cohort:
+            # Для последней когорты нет периодов наблюдения после — не считаем возврат и отток
+            churn_data.append({
+                'Когорта': cohort,
+                'Кол-во клиентов когорты': int(cohort_size),
+                'Накопительное кол-во возврата': '-',
+                'Накопительный % возврата': '-',
+                'Отток кол-во': '-',
+                'Отток %': '-'
+            })
+            continue
         
-        # 4. Накопительный % возврата за весь период
+        total_returned = accumulation_matrix.loc[cohort_period, last_period]
         if cohort_size > 0:
             total_returned_percent = (total_returned / cohort_size) * 100
         else:
             total_returned_percent = 0
-        
-        # 5. Отток кол-во = клиенты когорты - вернувшиеся
         churn_count = int(cohort_size - total_returned)
-        
-        # 6. Отток % = (отток / размер когорты) * 100
         if cohort_size > 0:
             churn_percent = (churn_count / cohort_size) * 100
         else:

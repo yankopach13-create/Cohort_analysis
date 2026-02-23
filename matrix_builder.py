@@ -5,8 +5,31 @@ import pandas as pd
 from utils import parse_period
 
 
+def _cohort_clients_by_first_period(df, year_month_col, client_col, sorted_periods):
+    """Строит словарь период -> множество клиентов, для которых этот период — первый по порядку.
+    
+    Когорта = период первой покупки клиента (по порядку sorted_periods).
+    """
+    period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
+    df_filtered = df[[year_month_col, client_col]].dropna()
+    client_cohorts = {}
+    for client, group in df_filtered.groupby(client_col):
+        periods = group[year_month_col].dropna().unique()
+        valid = [p for p in periods if p in period_indices]
+        if valid:
+            first_period = min(valid, key=lambda p: period_indices[p])
+            client_cohorts[client] = first_period
+    cohort_clients = {period: set() for period in sorted_periods}
+    for client, first_period in client_cohorts.items():
+        cohort_clients[first_period].add(client)
+    return cohort_clients
+
+
 def build_cohort_matrix(df, year_month_col, client_col, value_type='clients'):
     """Строит когортную матрицу по периоду "Год-месяц".
+    
+    Когорта периода = клиенты, у которых первая покупка пришлась на этот период
+    (клиент закреплён за одной когортой — по первой покупке).
     
     Args:
         df: DataFrame с данными
@@ -17,64 +40,52 @@ def build_cohort_matrix(df, year_month_col, client_col, value_type='clients'):
     Returns:
         tuple: (matrix_intersection, sorted_periods) - матрица пересечений и отсортированный список периодов
     """
-    # Получаем уникальные периоды и сортируем их
     unique_periods = df[year_month_col].dropna().unique()
-    
-    # Сортируем периоды по году и номеру периода (месяц или неделя)
     periods_with_sort = [(period, parse_period(str(period).strip())) for period in unique_periods]
-    
-    # Сортируем: сначала по году, потом по типу (месяцы сначала), потом по номеру
-    # Периоды с (0, 0, 0) будут в начале, поэтому фильтруем их
     valid_periods = [(p, parsed) for p, parsed in periods_with_sort if parsed != (0, 0, 0)]
     invalid_periods = [p for p, parsed in periods_with_sort if parsed == (0, 0, 0)]
     
     if valid_periods:
-        valid_periods.sort(key=lambda x: (x[1][0], x[1][2], x[1][1]))  # (year, type, number)
+        valid_periods.sort(key=lambda x: (x[1][0], x[1][2], x[1][1]))
         sorted_periods = [period[0] for period in valid_periods]
-        
-        # Добавляем нераспознанные периоды в конец (если есть)
         if invalid_periods:
             sorted_periods.extend(sorted(invalid_periods))
     else:
-        # Если все периоды не распознаны, используем просто сортировку по строке
         sorted_periods = sorted([str(p) for p in unique_periods])
     
-    # Оптимизация: предварительно группируем данные по периодам
-    # Создаем словарь: период -> множество клиентов
+    # Период -> множество клиентов в этом периоде (для столбцов)
     period_clients = {}
     for period in sorted_periods:
         period_data = df[df[year_month_col] == period]
         if value_type == 'clients':
             period_clients[period] = set(period_data[client_col].dropna().unique())
         else:
-            # Для count просто сохраняем количество
             period_clients[period] = len(period_data)
     
-    # Создаем матрицу пересечений клиентов
+    if value_type == 'clients':
+        # Когорта = первая покупка: период -> множество клиентов с первой покупкой в этом периоде
+        cohort_clients = _cohort_clients_by_first_period(df, year_month_col, client_col, sorted_periods)
+    else:
+        cohort_clients = None
+    
     matrix_intersection = pd.DataFrame(
         index=sorted_periods,
         columns=sorted_periods,
         dtype=int
     )
     
-    # Заполняем матрицу используя предварительно вычисленные множества
     for row_period in sorted_periods:
         for col_period in sorted_periods:
-            if row_period == col_period:
-                # Диагональ - клиенты в этом периоде
-                if value_type == 'clients':
-                    matrix_intersection.loc[row_period, col_period] = len(period_clients[row_period])
+            if value_type == 'clients':
+                if row_period == col_period:
+                    matrix_intersection.loc[row_period, col_period] = len(cohort_clients[row_period])
                 else:
-                    matrix_intersection.loc[row_period, col_period] = period_clients[row_period]
-            else:
-                # Пересечение клиентов между двумя периодами
-                if value_type == 'clients':
-                    clients_row = period_clients[row_period]
-                    clients_col = period_clients[col_period]
-                    intersection = len(clients_row & clients_col)
+                    intersection = len(cohort_clients[row_period] & period_clients[col_period])
                     matrix_intersection.loc[row_period, col_period] = intersection
+            else:
+                if row_period == col_period:
+                    matrix_intersection.loc[row_period, col_period] = period_clients[row_period]
                 else:
-                    # Для count это не имеет смысла, но оставляем для совместимости
                     matrix_intersection.loc[row_period, col_period] = 0
     
     return matrix_intersection, sorted_periods
@@ -83,7 +94,9 @@ def build_cohort_matrix(df, year_month_col, client_col, value_type='clients'):
 def build_accumulation_matrix(df, year_month_col, client_col, sorted_periods):
     """Строит матрицу накопления возврата клиентов.
     
-    Накопление идет только с периода СЛЕДУЮЩЕГО за периодом когорты (без самого периода когорты).
+    Когорта = период первой покупки. На диагонали — размер когорты.
+    В ячейках после диагонали — накопленное кол-во клиентов когорты, которые
+    вернулись хотя бы раз в периодах ПОСЛЕ когорты (без учёта самого периода когорты).
     
     Args:
         df: DataFrame с данными
@@ -99,42 +112,29 @@ def build_accumulation_matrix(df, year_month_col, client_col, sorted_periods):
         columns=sorted_periods,
         dtype=int
     )
-    
-    # Оптимизация: предварительно создаем словарь период -> множество клиентов
     period_clients_dict = {}
     for period in sorted_periods:
         period_data = df[df[year_month_col] == period]
         period_clients_dict[period] = set(period_data[client_col].dropna().unique())
     
-    # Получаем индекс каждого периода для определения порядка
+    cohort_clients_by_period = _cohort_clients_by_first_period(df, year_month_col, client_col, sorted_periods)
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     
     for row_period in sorted_periods:
         row_idx = period_indices[row_period]
-        
-        # Получаем множество клиентов этой когорты (в первом периоде когорты)
-        cohort_clients = period_clients_dict[row_period]
-        
-        # Предварительно вычисляем накопление для всех последующих периодов
-        accumulated_clients_by_period = {}
+        cohort_clients = cohort_clients_by_period[row_period]
+        # Возврат = только периоды после когорты; на диагонали — размер когорты
         current_accumulated = set()
         
         for col_idx in range(row_idx, len(sorted_periods)):
             col_period = sorted_periods[col_idx]
-            
             if col_idx == row_idx:
-                # Диагональ - клиенты в первом периоде когорты
                 matrix_accumulation.loc[row_period, col_period] = len(cohort_clients)
-                accumulated_clients_by_period[col_period] = set(cohort_clients)
-            elif col_idx > row_idx:
-                # Добавляем клиентов из текущего периода к накопленным
+            else:
                 period_clients = period_clients_dict[col_period]
-                cohort_period_clients = period_clients & cohort_clients
-                current_accumulated.update(cohort_period_clients)
-                accumulated_clients_by_period[col_period] = set(current_accumulated)
+                current_accumulated.update(cohort_clients & period_clients)
                 matrix_accumulation.loc[row_period, col_period] = len(current_accumulated)
         
-        # Заполняем нулями периоды до начала когорты
         for col_idx in range(row_idx):
             col_period = sorted_periods[col_idx]
             matrix_accumulation.loc[row_period, col_period] = 0
