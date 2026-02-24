@@ -2072,33 +2072,31 @@ if uploaded_file is not None:
                                         category_clients = set(category_data[client_code_col].dropna().astype(str).unique())
                                         all_category_clients_all_periods.update(category_clients)
                                 
-                                # Для каждой когорты рассчитываем метрики
+                                # Для каждой когорты рассчитываем метрики (столбцы первого файла — из session_state)
                                 churn_table = st.session_state.churn_table
                                 client_cohorts_cache = st.session_state.get('client_cohorts_cache', None)
-                                # Собираем всех клиентов оттока из сети для всех когорт
+                                year_month_col_1st = st.session_state.year_month_col
+                                client_col_1st = st.session_state.client_col
                                 all_network_churn_clients = set()
                                 for cohort_period in sorted_periods:
-                                    # Получаем клиентов оттока для этой когорты
-                                    churn_clients_set_cohort = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, cohort_period, period_clients_cache, client_cohorts_cache))
+                                    churn_clients_set_cohort = set(get_churn_clients(df, year_month_col_1st, client_col_1st, sorted_periods, cohort_period, period_clients_cache, client_cohorts_cache))
                                     churn_clients_set_cohort = {str(client) for client in churn_clients_set_cohort}
                                     
-                                    # Получаем отток из категории для этой когорты
                                     cohort_row = churn_table[churn_table['Когорта'] == cohort_period]
                                     churn_count_cohort = _churn_int(cohort_row.iloc[0]['Отток кол-во']) if not cohort_row.empty else 0
                                     cohort_size_cohort = int(cohort_row.iloc[0]['Кол-во клиентов когорты']) if not cohort_row.empty else 0
                                     
-                                    # Определяем периоды начиная с этой когорты
                                     cohort_index_cohort = sorted_periods.index(cohort_period) if cohort_period in sorted_periods else 0
                                     periods_from_cohort_cohort = sorted_periods[cohort_index_cohort:]
-                                    # Периоды ПОСЛЕ когорты (исключая период когорты)
                                     periods_after_cohort_cohort = periods_from_cohort_cohort[1:] if len(periods_from_cohort_cohort) > 1 else []
                                     
-                                    # Клиенты оттока, присутствующие в других категориях ПОСЛЕ месяца когорты
                                     all_category_clients_after_cohort = set()
                                     if year_month_col is not None and len(periods_after_cohort_cohort) > 0:
+                                        periods_after_set_cohort = {str(p).strip() for p in periods_after_cohort_cohort}
                                         for category in categories:
                                             category_data = df_categories[df_categories[group_col] == category]
-                                            category_data_filtered = category_data[category_data[year_month_col].isin(periods_after_cohort_cohort)]
+                                            period_str_cat = category_data[year_month_col].astype(str).str.strip()
+                                            category_data_filtered = category_data[period_str_cat.isin(periods_after_set_cohort)]
                                             category_clients = set(category_data_filtered[client_code_col].dropna().astype(str).unique())
                                             all_category_clients_after_cohort.update(category_clients)
                                     elif year_month_col is None:
@@ -2175,9 +2173,11 @@ if uploaded_file is not None:
                                     # Периоды ПОСЛЕ когорты (исключая период когорты) - начинаем расчет с этого периода
                                     periods_after_cohort = periods_from_cohort[1:] if len(periods_from_cohort) > 1 else []
                                     
-                                    # Получаем клиентов оттока для выбранной когорты
+                                    # Получаем клиентов оттока для выбранной когорты (столбцы — из первого файла)
                                     client_cohorts_cache = st.session_state.get('client_cohorts_cache', None)
-                                    churn_clients_set = set(get_churn_clients(df, year_month_col, client_col, sorted_periods, selected_cohort, period_clients_cache, client_cohorts_cache))
+                                    year_month_col_1 = st.session_state.year_month_col
+                                    client_col_1 = st.session_state.client_col
+                                    churn_clients_set = set(get_churn_clients(df, year_month_col_1, client_col_1, sorted_periods, selected_cohort, period_clients_cache, client_cohorts_cache))
                                     churn_clients_set = {str(client) for client in churn_clients_set}
                                     
                                     # Получаем размер когорты и отток из churn_table
@@ -2186,14 +2186,15 @@ if uploaded_file is not None:
                                     cohort_size = int(cohort_row.iloc[0]['Кол-во клиентов когорты']) if not cohort_row.empty else 0
                                     churn_count = _churn_int(cohort_row.iloc[0]['Отток кол-во']) if not cohort_row.empty else 0
                                     
-                                    # Клиенты оттока, присутствующие в других категориях ПОСЛЕ месяца когорты
+                                    # Клиенты оттока, присутствующие в других категориях ПОСЛЕ периода когорты (столбец периода — из второго файла)
                                     all_category_clients_after_cohort = set()
-                                    if year_month_col is not None and len(periods_after_cohort) > 0:
-                                        # Используем только данные из периодов ПОСЛЕ выбранной когорты
+                                    year_month_col_cat_ui = year_month_col  # столбец периода во втором файле
+                                    if year_month_col_cat_ui is not None and len(periods_after_cohort) > 0:
+                                        periods_after_set = {str(p).strip() for p in periods_after_cohort}
                                         for category in categories:
                                             category_data = df_categories[df_categories[group_col] == category]
-                                            # Фильтруем только периоды ПОСЛЕ выбранной когорты
-                                            category_data_filtered = category_data[category_data[year_month_col].isin(periods_after_cohort)]
+                                            period_col_str = category_data[year_month_col_cat_ui].astype(str).str.strip()
+                                            category_data_filtered = category_data[period_col_str.isin(periods_after_set)]
                                             category_clients = set(category_data_filtered[client_code_col].dropna().astype(str).unique())
                                             all_category_clients_after_cohort.update(category_clients)
                                     elif year_month_col is None:
@@ -2259,12 +2260,12 @@ if uploaded_file is not None:
                                     # Словарь для хранения уникальных клиентов по категориям (для итогового столбца)
                                     category_unique_clients = {category: set() for category in categories}
                                     
-                                    # Если есть столбец "Год-месяц", используем его для фильтрации по периодам
+                                    # Если есть столбец периода во втором файле, фильтруем по периодам (сравнение по строкам)
                                     if year_month_col is not None:
-                                        # Для каждого периода ПОСЛЕ выбранной когорты проверяем присутствие клиентов оттока в категориях
+                                        cat_period_str_ui = df_categories[year_month_col].astype(str).str.strip()
                                         for period in periods_after_cohort_table:
-                                            # Фильтруем данные по периоду
-                                            period_data = df_categories[df_categories[year_month_col] == period]
+                                            period_str_ui = str(period).strip()
+                                            period_data = df_categories[cat_period_str_ui == period_str_ui]
                                             
                                             # Для каждой категории считаем количество клиентов оттока, присутствующих в этом периоде
                                             for category in categories:
