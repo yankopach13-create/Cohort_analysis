@@ -2,6 +2,7 @@
 Утилиты и вспомогательные функции
 """
 import re
+import pandas as pd
 import streamlit.components.v1 as components
 import json
 from config import MONTHS_DICT
@@ -295,4 +296,53 @@ def get_period_after_label(sorted_periods):
     parsed = parse_period(str(sorted_periods[0]).strip())
     # type: 0 = месяц, 1 = неделя
     return 'недели' if parsed[2] == 1 else 'месяца'
+
+
+def normalize_client_code(val):
+    """Приводит код клиента к единому строковому виду для сравнения между файлами.
+    
+    Убирает пробелы; числа приводит к целому и строке, чтобы '196107' и '196107.0' совпадали.
+    
+    Args:
+        val: значение из столбца (число или строка)
+        
+    Returns:
+        str: нормализованный код клиента
+    """
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ''
+    s = str(val).strip().replace(' ', '')
+    if not s:
+        return ''
+    try:
+        return str(int(float(s)))
+    except (ValueError, TypeError):
+        return s
+
+
+def normalize_period_for_compare(val):
+    """Приводит период к каноническому виду для сравнения между файлами.
+    
+    Недели: '2025/1', '2025/01', 202501 -> '2025/01'. Месяцы возвращаются как str(val).strip().
+    
+    Args:
+        val: значение периода из столбца Год-неделя/Год-месяц
+        
+    Returns:
+        str: нормализованная строка периода
+    """
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ''
+    s = str(val).strip()
+    if not s:
+        return ''
+    parsed = parse_period(s)
+    if parsed == (0, 0, 0):
+        return s
+    year, num, ptype = parsed
+    if ptype == 1:  # неделя
+        return f"{year}/{num:02d}"
+    if ptype == 0:  # месяц
+        return f"{year}-{num:02d}"
+    return s
 
