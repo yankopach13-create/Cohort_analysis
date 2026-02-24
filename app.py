@@ -40,10 +40,18 @@ from matrix_builder import (
     build_accumulation_percent_matrix, build_inflow_matrix
 )
 from ui_components import color_gradient, apply_matrix_color_gradient
+import inspect
 from excel_exporter import (
     apply_excel_color_formatting, apply_excel_cohort_formatting,
     apply_excel_percent_formatting, apply_excel_inflow_formatting
 )
+
+def _excel_format_kwargs(fn, data_start_row):
+    """Ключевые аргументы для функций форматирования Excel (data_start_row поддерживается не во всех версиях)."""
+    kwargs = {}
+    if "data_start_row" in inspect.signature(fn).parameters:
+        kwargs["data_start_row"] = data_start_row
+    return kwargs
 
 
 def _churn_int(val, default=0):
@@ -517,7 +525,7 @@ if uploaded_file is not None:
                                     worksheet1.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
                                     worksheet1.merge_cells(f"A1:{get_column_letter(1 + len(cohort_matrix.columns))}1")
                                     worksheet1.cell(row=1, column=1).font = Font(bold=True, size=11)
-                                apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods, data_start_row=data_start_row)
+                                apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods, **_excel_format_kwargs(apply_excel_cohort_formatting, data_start_row))
                                 
                                 # Таблица 2: Динамика накопления возврата
                                 accumulation_matrix_copy = accumulation_matrix.copy()
@@ -528,7 +536,7 @@ if uploaded_file is not None:
                                     worksheet2.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
                                     worksheet2.merge_cells(f"A1:{get_column_letter(1 + len(accumulation_matrix.columns))}1")
                                     worksheet2.cell(row=1, column=1).font = Font(bold=True, size=11)
-                                apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True, data_start_row=data_start_row)
+                                apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True, **_excel_format_kwargs(apply_excel_color_formatting, data_start_row))
                                 # Форматируем значения как целые числа (только для непустых ячеек)
                                 for row_idx in range(data_start_row, data_start_row + len(accumulation_matrix.index)):
                                     for col_idx in range(2, len(accumulation_matrix.columns) + 2):
@@ -545,7 +553,7 @@ if uploaded_file is not None:
                                     worksheet3.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
                                     worksheet3.merge_cells(f"A1:{get_column_letter(1 + len(accumulation_percent_matrix.columns))}1")
                                     worksheet3.cell(row=1, column=1).font = Font(bold=True, size=11)
-                                apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods, data_start_row=data_start_row)
+                                apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods, **_excel_format_kwargs(apply_excel_percent_formatting, data_start_row))
                                 
                                 # Таблица 4: Приток возврата в %
                                 inflow_matrix_copy = inflow_matrix.copy()
@@ -556,7 +564,7 @@ if uploaded_file is not None:
                                     worksheet4.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
                                     worksheet4.merge_cells(f"A1:{get_column_letter(1 + len(inflow_matrix.columns))}1")
                                     worksheet4.cell(row=1, column=1).font = Font(bold=True, size=11)
-                                apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods, data_start_row=data_start_row)
+                                apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods, **_excel_format_kwargs(apply_excel_inflow_formatting, data_start_row))
                                 
                                 # Таблица 5: Отток клиентов из категории
                                 churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix, None, None)
