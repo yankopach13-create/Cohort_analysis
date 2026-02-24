@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -377,7 +378,17 @@ if uploaded_file is not None:
                             df = st.session_state.df
                             year_month_col = st.session_state.year_month_col
                             client_col = st.session_state.client_col
-                            
+                            # Подпись «Продукт построения когорт» из первого столбца первого документа
+                            product_col = df.columns[0] if df is not None and len(df.columns) > 0 else None
+                            if product_col is not None:
+                                _up = sorted(df[product_col].dropna().astype(str).str.strip().unique())
+                                _up = [p for p in _up if p]
+                                products_label = ", ".join(_up) if _up else ""
+                            else:
+                                products_label = ""
+                            # Смещение строки данных при наличии заголовка «Продукт построения когорт»
+                            data_start_row = 4 if products_label else 2
+                            table_startrow = 2 if products_label else 0
                             # Если второй файл загружен, но данные ещё не обработаны, обрабатываем их на лету
                             uploaded_file_categories = st.session_state.get('upload_categories_file')
                             if uploaded_file_categories is not None and ('df_categories' not in st.session_state or st.session_state.df_categories is None):
@@ -500,20 +511,26 @@ if uploaded_file is not None:
                                 # Таблица 1: Динамика уникальных клиентов когорт
                                 cohort_matrix_copy = cohort_matrix.copy()
                                 cohort_matrix_copy.index.name = 'Когорта / Период'
-                                cohort_matrix_copy.to_excel(writer, sheet_name="1. Динамика уникальных клиентов", startrow=0, index=True)
+                                cohort_matrix_copy.to_excel(writer, sheet_name="1. Динамика уникальных клиентов", startrow=table_startrow, index=True)
                                 worksheet1 = writer.sheets["1. Динамика уникальных клиентов"]
-                                # Используем специальное форматирование с горизонтальной динамикой
-                                apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods)
+                                if products_label:
+                                    worksheet1.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
+                                    worksheet1.merge_cells(f"A1:{get_column_letter(1 + len(cohort_matrix.columns))}1")
+                                    worksheet1.cell(row=1, column=1).font = Font(bold=True, size=11)
+                                apply_excel_cohort_formatting(worksheet1, cohort_matrix.astype(float), sorted_periods, data_start_row=data_start_row)
                                 
                                 # Таблица 2: Динамика накопления возврата
                                 accumulation_matrix_copy = accumulation_matrix.copy()
                                 accumulation_matrix_copy.index.name = 'Когорта / Период'
-                                accumulation_matrix_copy.to_excel(writer, sheet_name="2. Динамика накопления", startrow=0, index=True)
+                                accumulation_matrix_copy.to_excel(writer, sheet_name="2. Динамика накопления", startrow=table_startrow, index=True)
                                 worksheet2 = writer.sheets["2. Динамика накопления"]
-                                # Применяем форматирование со скрытием нулевых значений
-                                apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True)
+                                if products_label:
+                                    worksheet2.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
+                                    worksheet2.merge_cells(f"A1:{get_column_letter(1 + len(accumulation_matrix.columns))}1")
+                                    worksheet2.cell(row=1, column=1).font = Font(bold=True, size=11)
+                                apply_excel_color_formatting(worksheet2, accumulation_matrix.astype(float), hide_zeros=True, data_start_row=data_start_row)
                                 # Форматируем значения как целые числа (только для непустых ячеек)
-                                for row_idx in range(2, len(accumulation_matrix.index) + 2):
+                                for row_idx in range(data_start_row, data_start_row + len(accumulation_matrix.index)):
                                     for col_idx in range(2, len(accumulation_matrix.columns) + 2):
                                         cell = worksheet2.cell(row=row_idx, column=col_idx)
                                         if cell.value is not None and not isinstance(cell.value, str) and cell.value != "":
@@ -522,18 +539,24 @@ if uploaded_file is not None:
                                 # Таблица 3: Динамика накопления возврата в %
                                 accumulation_percent_matrix_copy = accumulation_percent_matrix.copy()
                                 accumulation_percent_matrix_copy.index.name = 'Когорта / Период'
-                                accumulation_percent_matrix_copy.to_excel(writer, sheet_name="3. Динамика накопления %", startrow=0, index=True)
+                                accumulation_percent_matrix_copy.to_excel(writer, sheet_name="3. Динамика накопления %", startrow=table_startrow, index=True)
                                 worksheet3 = writer.sheets["3. Динамика накопления %"]
-                                # Используем специальное форматирование для процентов
-                                apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods)
+                                if products_label:
+                                    worksheet3.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
+                                    worksheet3.merge_cells(f"A1:{get_column_letter(1 + len(accumulation_percent_matrix.columns))}1")
+                                    worksheet3.cell(row=1, column=1).font = Font(bold=True, size=11)
+                                apply_excel_percent_formatting(worksheet3, accumulation_percent_matrix, sorted_periods, data_start_row=data_start_row)
                                 
                                 # Таблица 4: Приток возврата в %
                                 inflow_matrix_copy = inflow_matrix.copy()
                                 inflow_matrix_copy.index.name = 'Когорта / Период'
-                                inflow_matrix_copy.to_excel(writer, sheet_name="4. Приток возврата %", startrow=0, index=True)
+                                inflow_matrix_copy.to_excel(writer, sheet_name="4. Приток возврата %", startrow=table_startrow, index=True)
                                 worksheet4 = writer.sheets["4. Приток возврата %"]
-                                # Используем специальное форматирование для процентов притока
-                                apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods)
+                                if products_label:
+                                    worksheet4.cell(row=1, column=1, value=f"Продукт построения когорт: {products_label}")
+                                    worksheet4.merge_cells(f"A1:{get_column_letter(1 + len(inflow_matrix.columns))}1")
+                                    worksheet4.cell(row=1, column=1).font = Font(bold=True, size=11)
+                                apply_excel_inflow_formatting(worksheet4, inflow_matrix, sorted_periods, data_start_row=data_start_row)
                                 
                                 # Таблица 5: Отток клиентов из категории
                                 churn_table_full = build_churn_table(df, year_month_col, client_col, sorted_periods, cohort_matrix, accumulation_matrix, accumulation_percent_matrix, None, None)
@@ -958,11 +981,22 @@ if uploaded_file is not None:
                                 st.error(f"Ошибка при генерации отчета: {str(e)}")
                                 excel_data_full = b""  # Пустой файл
                         
+                        # Имя файла с продуктом построения когорт
+                        _df = st.session_state.get('df')
+                        if _df is not None and len(_df.columns) > 0:
+                            _pc = _df.columns[0]
+                            _upl = sorted(_df[_pc].dropna().astype(str).str.strip().unique())
+                            _upl = [p for p in _upl if p]
+                            _suffix = "_".join(_upl)
+                            _suffix = re.sub(r'[\\/:*?"<>|]', '_', _suffix)[:80].strip('._ ') if _suffix else ""
+                        else:
+                            _suffix = ""
+                        _excel_name = f"полный_отчёт_когортный_анализ_{_suffix}_{info['first_period']}_{info['last_period']}.xlsx" if _suffix else f"полный_отчёт_когортный_анализ_{info['first_period']}_{info['last_period']}.xlsx"
                         with col_excel_button:
                             st.download_button(
                                 label="📥 Скачать полный отчёт в Excel",
                                 data=excel_data_full,
-                                file_name=f"полный_отчёт_когортный_анализ_{info['first_period']}_{info['last_period']}.xlsx",
+                                file_name=_excel_name,
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                 use_container_width=True,
                                 key="download_full_report"

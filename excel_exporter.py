@@ -54,23 +54,21 @@ def get_rgb_color_for_excel(val, min_val, max_val, mean_val, is_diagonal=False):
     return (r, g, b)
 
 
-def apply_excel_color_formatting(worksheet, df, hide_zeros=False):
+def apply_excel_color_formatting(worksheet, df, hide_zeros=False, data_start_row=2):
     """Применяет цветовое форматирование к Excel файлу.
     
     Args:
         worksheet: лист Excel
         df: DataFrame для форматирования
         hide_zeros: если True, нулевые значения скрываются (пустая ячейка)
+        data_start_row: номер первой строки с данными (1-based; 4 если сверху есть заголовок «Продукт построения когорт»)
     """
     min_val = df.min().min()
     max_val = df.max().max()
     mean_val = df.mean().mean()
     
-    # Применяем форматирование к данным (начиная со строки 2, т.к. строка 1 - заголовки)
     period_indices_excel = {period: idx for idx, period in enumerate(df.index)}
-    
-    # Определяем, на какой строке начинаются данные (обычно строка 2, если есть заголовок индекса)
-    start_row = 2  # Начальная строка с данными (строка 1 - заголовки столбцов и индекса)
+    start_row = data_start_row
     
     for row_idx, period in enumerate(df.index, start=start_row):
         for col_idx, col_period in enumerate(df.columns, start=2):  # Столбец 1 - индекс, данные с столбца 2
@@ -108,23 +106,22 @@ def apply_excel_color_formatting(worksheet, df, hide_zeros=False):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def apply_excel_cohort_formatting(worksheet, df, sorted_periods):
+def apply_excel_cohort_formatting(worksheet, df, sorted_periods, data_start_row=2):
     """Применяет цветовое форматирование с горизонтальной динамикой к Excel файлу для таблицы когорт.
     
     Args:
         worksheet: лист Excel
         df: DataFrame для форматирования
         sorted_periods: отсортированный список периодов
+        data_start_row: номер первой строки с данными (1-based; 4 если сверху есть заголовок «Продукт построения когорт»)
     """
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     
-    # Для горизонтальной динамики рассчитываем min/max/mean для каждой строки отдельно
     def get_row_stats(row_period):
         row_idx = period_indices.get(row_period, 0)
         row_values = []
         for col_period in df.columns:
             col_idx = period_indices.get(col_period, 0)
-            # Учитываем только значения после диагонали
             if row_period != col_period and col_idx >= row_idx:
                 val = df.loc[row_period, col_period]
                 if not pd.isna(val) and val > 0:
@@ -133,7 +130,7 @@ def apply_excel_cohort_formatting(worksheet, df, sorted_periods):
             return min(row_values), max(row_values), sum(row_values) / len(row_values)
         return 0, 0, 0
     
-    start_row = 2
+    start_row = data_start_row
     for row_idx, period in enumerate(df.index, start=start_row):
         row_period_idx = period_indices.get(period, 0)
         row_min, row_max, row_mean = get_row_stats(period)
@@ -177,17 +174,17 @@ def apply_excel_cohort_formatting(worksheet, df, sorted_periods):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def apply_excel_percent_formatting(worksheet, df, sorted_periods):
+def apply_excel_percent_formatting(worksheet, df, sorted_periods, data_start_row=2):
     """Применяет цветовое форматирование и форматирование процентов к Excel файлу для таблицы накопления в %.
     
     Args:
         worksheet: лист Excel
         df: DataFrame для форматирования
         sorted_periods: отсортированный список периодов
+        data_start_row: номер первой строки с данными (1-based; 4 если сверху есть заголовок «Продукт построения когорт»)
     """
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     
-    # Для горизонтальной динамики рассчитываем min/max/mean для каждой строки отдельно
     def get_row_stats(row_period):
         row_idx = period_indices.get(row_period, 0)
         row_values = []
@@ -201,7 +198,7 @@ def apply_excel_percent_formatting(worksheet, df, sorted_periods):
             return min(row_values), max(row_values), sum(row_values) / len(row_values)
         return 0, 0, 0
     
-    start_row = 2
+    start_row = data_start_row
     for row_idx, period in enumerate(df.index, start=start_row):
         row_period_idx = period_indices.get(period, 0)
         row_min, row_max, row_mean = get_row_stats(period)
@@ -242,17 +239,17 @@ def apply_excel_percent_formatting(worksheet, df, sorted_periods):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
-def apply_excel_inflow_formatting(worksheet, df, sorted_periods):
+def apply_excel_inflow_formatting(worksheet, df, sorted_periods, data_start_row=2):
     """Применяет цветовое форматирование и форматирование процентов к Excel файлу для таблицы притока в %.
     
     Args:
         worksheet: лист Excel
         df: DataFrame для форматирования
         sorted_periods: отсортированный список периодов
+        data_start_row: номер первой строки с данными (1-based; 4 если сверху есть заголовок «Продукт построения когорт»)
     """
     period_indices = {period: idx for idx, period in enumerate(sorted_periods)}
     
-    # Для горизонтальной динамики рассчитываем min/max/mean для каждой строки отдельно
     def get_row_stats(row_period):
         row_idx = period_indices.get(row_period, 0)
         row_values = []
@@ -266,7 +263,7 @@ def apply_excel_inflow_formatting(worksheet, df, sorted_periods):
             return min(row_values), max(row_values), sum(row_values) / len(row_values)
         return 0, 0, 0
     
-    start_row = 2
+    start_row = data_start_row
     for row_idx, period in enumerate(df.index, start=start_row):
         row_period_idx = period_indices.get(period, 0)
         row_min, row_max, row_mean = get_row_stats(period)
