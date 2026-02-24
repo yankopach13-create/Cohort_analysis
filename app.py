@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import io
 import os
-import platform
 from datetime import datetime
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
@@ -12,15 +11,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')  # Используем неинтерактивный бэкенд
 import seaborn as sns
-from reportlab.lib.pagesizes import A4, letter
-from reportlab.lib import colors
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
 # Импорты из новых модулей
 from config import PAGE_CONFIG, TEMPLATE_IMAGE_PATHS, CATEGORIES_TEMPLATE_IMAGE_PATHS
 from utils import parse_period, parse_year_month, create_copy_button, detect_columns
@@ -1010,17 +1000,14 @@ if uploaded_file is not None:
                         </style>
                         """, unsafe_allow_html=True)
                         
-                        # Создаем колонки для горизонтального размещения кнопок
-                        col_excel_button, col_pdf_button = st.columns(2)
+                        # Строка: слева — «Продукт построения когорт», справа — кнопка скачивания Excel
+                        col_product, col_excel_btn = st.columns([3, 1])
                         
                         # Генерируем файл каждый раз при рендеринге (данные могут обновиться)
-                        # Всегда генерируем отчет заново, чтобы включить все актуальные данные
                         try:
                             excel_data_full = create_full_report_excel()
-                            # Сохраняем для возможного использования в будущем
                             st.session_state.excel_report_data = excel_data_full
                         except Exception as e:
-                            # Если ошибка, используем сохраненный файл как fallback
                             if 'excel_report_data' in st.session_state and st.session_state.excel_report_data is not None:
                                 excel_data_full = st.session_state.excel_report_data
                                 st.warning(f"Использован сохраненный отчет. Ошибка при генерации: {str(e)}")
@@ -1028,7 +1015,6 @@ if uploaded_file is not None:
                                 st.error(f"Ошибка при генерации отчета: {str(e)}")
                                 excel_data_full = b""  # Пустой файл
                         
-                        # Имя файла с продуктом построения когорт
                         _df = st.session_state.get('df')
                         if _df is not None and len(_df.columns) > 0:
                             _pc = _df.columns[0]
@@ -1039,7 +1025,24 @@ if uploaded_file is not None:
                         else:
                             _suffix = ""
                         _excel_name = f"полный_отчёт_когортный_анализ_{_suffix}_{info['first_period']}_{info['last_period']}.xlsx" if _suffix else f"полный_отчёт_когортный_анализ_{info['first_period']}_{info['last_period']}.xlsx"
-                        with col_excel_button:
+                        
+                        # Продукт построения когорт — слева
+                        with col_product:
+                            df_first = st.session_state.get('df')
+                            if df_first is not None and len(df_first.columns) > 0:
+                                product_col = df_first.columns[0]
+                                unique_products = sorted(df_first[product_col].dropna().astype(str).str.strip().unique())
+                                unique_products = [p for p in unique_products if p]
+                                if unique_products:
+                                    products_text = ", ".join(unique_products)
+                                    st.markdown(f"""
+                                    <p style="font-size: 1.5rem; font-weight: 600; margin-top: 16px;">
+                                        Продукт построения когорт: <span style="color: #0d6efd; font-weight: 700;">{products_text}</span>
+                                    </p>
+                                    """, unsafe_allow_html=True)
+                        
+                        # Кнопка скачивания Excel — справа
+                        with col_excel_btn:
                             st.download_button(
                                 label="📥 Скачать полный отчёт в Excel",
                                 data=excel_data_full,
@@ -1048,389 +1051,6 @@ if uploaded_file is not None:
                                 use_container_width=True,
                                 key="download_full_report"
                             )
-                        
-                        # Создаем функцию для генерации аналитического PDF отчёта
-                        def create_analysis_pdf():
-                            """Создает PDF отчёт с графиками и анализом"""
-                            buffer = io.BytesIO()
-                            
-                            # Регистрируем шрифт с поддержкой кириллицы
-                            font_name = 'Helvetica'
-                            font_name_bold = 'Helvetica-Bold'
-                            
-                            try:
-                                # Пытаемся найти системный шрифт с поддержкой кириллицы
-                                if platform.system() == 'Windows':
-                                    # Пути к стандартным шрифтам Windows с поддержкой кириллицы
-                                    windows_fonts = [
-                                        r'C:\Windows\Fonts\arial.ttf',
-                                        r'C:\Windows\Fonts\calibri.ttf',
-                                        r'C:\Windows\Fonts\comic.ttf',
-                                        r'C:\Windows\Fonts\cour.ttf',
-                                    ]
-                                    
-                                    # Регистрируем первый доступный шрифт
-                                    for font_path in windows_fonts:
-                                        if os.path.exists(font_path):
-                                            try:
-                                                font_name = 'CyrillicFont'
-                                                font_name_bold = 'CyrillicFont-Bold'
-                                                pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                                pdfmetrics.registerFont(TTFont(font_name_bold, font_path))
-                                                break
-                                            except Exception as e:
-                                                continue
-                                elif platform.system() == 'Linux':
-                                    # Пути к стандартным шрифтам Linux с поддержкой кириллицы
-                                    linux_fonts = [
-                                        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-                                        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
-                                        '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',
-                                        '/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf',
-                                        '/usr/share/fonts/TTF/DejaVuSans.ttf',
-                                    ]
-                                    
-                                    # Регистрируем первый доступный шрифт
-                                    for font_path in linux_fonts:
-                                        if os.path.exists(font_path):
-                                            try:
-                                                font_name = 'CyrillicFont'
-                                                font_name_bold = 'CyrillicFont-Bold'
-                                                pdfmetrics.registerFont(TTFont(font_name, font_path))
-                                                pdfmetrics.registerFont(TTFont(font_name_bold, font_path))
-                                                break
-                                            except Exception as e:
-                                                continue
-                            except Exception as e:
-                                pass  # Используем стандартные шрифты в случае ошибки
-                            
-                            # Получаем данные из session state
-                            cohort_matrix = st.session_state.cohort_matrix
-                            sorted_periods = st.session_state.sorted_periods
-                            accumulation_matrix = st.session_state.accumulation_matrix
-                            accumulation_percent_matrix = st.session_state.accumulation_percent_matrix
-                            inflow_matrix = st.session_state.inflow_matrix
-                            churn_table = st.session_state.churn_table
-                            
-                            # Создаем PDF документ
-                            doc = SimpleDocTemplate(buffer, pagesize=A4)
-                            story = []
-                            styles = getSampleStyleSheet()
-                            
-                            # Стили с поддержкой кириллицы
-                            title_style = ParagraphStyle(
-                                'CustomTitle',
-                                parent=styles['Heading1'],
-                                fontName=font_name_bold,
-                                fontSize=24,
-                                textColor=colors.HexColor('#1f77b4'),
-                                spaceAfter=30,
-                                alignment=TA_CENTER
-                            )
-                            
-                            heading_style = ParagraphStyle(
-                                'CustomHeading',
-                                parent=styles['Heading2'],
-                                fontName=font_name_bold,
-                                fontSize=16,
-                                textColor=colors.HexColor('#1f77b4'),
-                                spaceAfter=12,
-                                spaceBefore=12
-                            )
-                            
-                            # Стиль для обычного текста с поддержкой кириллицы
-                            normal_style = ParagraphStyle(
-                                'CustomNormal',
-                                parent=styles['Normal'],
-                                fontName=font_name,
-                                fontSize=10
-                            )
-                            
-                            # Стиль для заголовков третьего уровня с поддержкой кириллицы
-                            heading3_style = ParagraphStyle(
-                                'CustomHeading3',
-                                parent=styles['Heading3'],
-                                fontName=font_name_bold,
-                                fontSize=12,
-                                textColor=colors.HexColor('#1f77b4'),
-                                spaceAfter=8,
-                                spaceBefore=8
-                            )
-                            
-                            # Титульная страница
-                            story.append(Paragraph("КОГОРТНЫЙ АНАЛИЗ", title_style))
-                            story.append(Spacer(1, 0.3*inch))
-                            story.append(Paragraph(f"Период анализа: {info['first_period']} - {info['last_period']}", normal_style))
-                            story.append(Paragraph(f"Количество когорт: {info['num_periods']}", normal_style))
-                            story.append(Paragraph(f"Дата формирования: {datetime.now().strftime('%d.%m.%Y %H:%M')}", normal_style))
-                            story.append(PageBreak())
-                            
-                            # Раздел 1: Общая статистика
-                            story.append(Paragraph("1. ОБЩАЯ СТАТИСТИКА", heading_style))
-                            
-                            # Диагональные значения (размер когорт)
-                            diagonal_values = {period: cohort_matrix.loc[period, period] for period in sorted_periods}
-                            
-                            stats_data = [
-                                ['Метрика', 'Значение'],
-                                ['Всего когорт', str(info['num_periods'])],
-                                ['Период начала', info['first_period']],
-                                ['Период окончания', info['last_period']],
-                                ['Максимальный размер когорты', f"{int(info['max_clients'])} ({info['max_period']})"],
-                                ['Минимальный размер когорты', f"{int(info['min_clients'])} ({info['min_period']})"],
-                                ['Средний размер когорты', f"{int(np.mean(list(diagonal_values.values())))}"],
-                                ['Общее количество уникальных клиентов', f"{int(sum(diagonal_values.values()))}"]
-                            ]
-                            
-                            stats_table = Table(stats_data, colWidths=[4*inch, 3*inch])
-                            stats_table.setStyle(TableStyle([
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f77b4')),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                                ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                                ('FONTNAME', (0, 1), (-1, -1), font_name),
-                                ('FONTSIZE', (0, 0), (-1, 0), 12),
-                                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                            ]))
-                            story.append(stats_table)
-                            story.append(Spacer(1, 0.3*inch))
-                            
-                            # График 1: Динамика размера когорт
-                            story.append(Paragraph("2. ДИНАМИКА РАЗМЕРА КОГОРТ", heading_style))
-                            
-                            fig, ax = plt.subplots(figsize=(10, 6))
-                            cohort_sizes = [diagonal_values[p] for p in sorted_periods]
-                            ax.plot(range(len(sorted_periods)), cohort_sizes, marker='o', linewidth=2, markersize=8, color='#1f77b4')
-                            ax.set_xlabel('Период', fontsize=12, fontweight='bold')
-                            ax.set_ylabel('Количество клиентов', fontsize=12, fontweight='bold')
-                            ax.set_title('Динамика размера когорт по периодам', fontsize=14, fontweight='bold', pad=20)
-                            ax.set_xticks(range(len(sorted_periods)))
-                            ax.set_xticklabels(sorted_periods, rotation=45, ha='right')
-                            ax.grid(True, alpha=0.3)
-                            ax.set_facecolor('#f8f9fa')
-                            
-                            for i, (period, size) in enumerate(zip(sorted_periods, cohort_sizes)):
-                                ax.annotate(f'{int(size)}', (i, size), textcoords="offset points", xytext=(0,10), ha='center', fontsize=9)
-                            
-                            plt.tight_layout()
-                            img_buffer1 = io.BytesIO()
-                            plt.savefig(img_buffer1, format='png', dpi=150, bbox_inches='tight')
-                            img_buffer1.seek(0)
-                            plt.close()
-                            
-                            img1 = Image(img_buffer1, width=6*inch, height=3.6*inch)
-                            story.append(img1)
-                            story.append(Spacer(1, 0.3*inch))
-                            
-                            # График 2: Тепловая карта возврата в %
-                            story.append(Paragraph("3. ТЕПЛОВАЯ КАРТА ВОЗВРАТА В %", heading_style))
-                            
-                            # Создаём упрощённую матрицу для визуализации (первые 15 когорт и периодов)
-                            max_cohorts = min(15, len(sorted_periods))
-                            matrix_vis = accumulation_percent_matrix.iloc[:max_cohorts, :max_cohorts]
-                            
-                            fig, ax = plt.subplots(figsize=(12, 10))
-                            sns.heatmap(matrix_vis, annot=True, fmt='.1f', cmap='RdYlGn', 
-                                       cbar_kws={'label': 'Процент возврата (%)'}, 
-                                       ax=ax, vmin=0, vmax=100, linewidths=0.5, linecolor='gray')
-                            ax.set_title('Тепловая карта накопления возврата клиентов (%)', fontsize=14, fontweight='bold', pad=20)
-                            ax.set_xlabel('Период', fontsize=12, fontweight='bold')
-                            ax.set_ylabel('Когорта', fontsize=12, fontweight='bold')
-                            
-                            plt.tight_layout()
-                            img_buffer2 = io.BytesIO()
-                            plt.savefig(img_buffer2, format='png', dpi=150, bbox_inches='tight')
-                            img_buffer2.seek(0)
-                            plt.close()
-                            
-                            img2 = Image(img_buffer2, width=6*inch, height=5*inch)
-                            story.append(img2)
-                            story.append(Spacer(1, 0.3*inch))
-                            
-                            # График 3: Отток по когортам
-                            story.append(Paragraph("4. АНАЛИЗ ОТТОКА КЛИЕНТОВ", heading_style))
-                            
-                            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-                            
-                            # Столбчатая диаграмма оттока в количестве (последняя когорта с "-" даёт 0)
-                            churn_counts_series = pd.to_numeric(churn_table['Отток кол-во'], errors='coerce').fillna(0).astype(int)
-                            churn_counts = churn_counts_series.values[:15]
-                            cohorts_display = churn_table['Когорта'].values[:15]
-                            churn_mean = churn_counts_series.replace(0, np.nan).mean()
-                            if pd.isna(churn_mean):
-                                churn_mean = 0
-                            colors_churn = ['#d62728' if x > churn_mean else '#ff7f0e' for x in churn_counts]
-                            ax1.barh(range(len(cohorts_display)), churn_counts, color=colors_churn)
-                            ax1.set_yticks(range(len(cohorts_display)))
-                            ax1.set_yticklabels(cohorts_display, fontsize=9)
-                            ax1.set_xlabel('Количество клиентов оттока', fontsize=11, fontweight='bold')
-                            ax1.set_title('Отток клиентов из категории по когортам', fontsize=12, fontweight='bold')
-                            ax1.grid(True, alpha=0.3, axis='x')
-                            
-                            # Столбчатая диаграмма оттока в процентах
-                            churn_percents_series = pd.to_numeric(churn_table['Отток %'], errors='coerce').fillna(0)
-                            churn_percents = churn_percents_series.values[:15]
-                            churn_pct_mean = churn_percents_series.replace(0, np.nan).mean()
-                            if pd.isna(churn_pct_mean):
-                                churn_pct_mean = 0
-                            colors_churn_pct = ['#d62728' if x > churn_pct_mean else '#ff7f0e' for x in churn_percents]
-                            ax2.barh(range(len(cohorts_display)), churn_percents, color=colors_churn_pct)
-                            ax2.set_yticks(range(len(cohorts_display)))
-                            ax2.set_yticklabels(cohorts_display, fontsize=9)
-                            ax2.set_xlabel('Процент оттока (%)', fontsize=11, fontweight='bold')
-                            ax2.set_title('Процент оттока по когортам', fontsize=12, fontweight='bold')
-                            ax2.grid(True, alpha=0.3, axis='x')
-                            
-                            plt.tight_layout()
-                            img_buffer4 = io.BytesIO()
-                            plt.savefig(img_buffer4, format='png', dpi=150, bbox_inches='tight')
-                            img_buffer4.seek(0)
-                            plt.close()
-                            
-                            img4 = Image(img_buffer4, width=7*inch, height=3.6*inch)
-                            story.append(img4)
-                            story.append(Spacer(1, 0.3*inch))
-                            
-                            # Таблицы с ключевыми метриками
-                            story.append(Paragraph("5. КЛЮЧЕВЫЕ МЕТРИКИ", heading_style))
-                            
-                            # Топ-5 когорт по размеру
-                            story.append(Paragraph("Топ-5 когорт по размеру:", heading3_style))
-                            top5_size = sorted(diagonal_values.items(), key=lambda x: x[1], reverse=True)[:5]
-                            top5_data = [['Место', 'Когорта', 'Количество клиентов']]
-                            for i, (period, size) in enumerate(top5_size, 1):
-                                top5_data.append([str(i), period, str(int(size))])
-                            
-                            top5_table = Table(top5_data, colWidths=[0.8*inch, 2.5*inch, 2*inch])
-                            top5_table.setStyle(TableStyle([
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f77b4')),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                                ('FONTNAME', (0, 1), (-1, -1), font_name),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                            ]))
-                            story.append(top5_table)
-                            story.append(Spacer(1, 0.2*inch))
-                            
-                            # Топ-5 когорт по проценту возврата
-                            story.append(Paragraph("Топ-5 когорт по проценту возврата:", heading3_style))
-                            churn_return_numeric = pd.to_numeric(churn_table['Накопительный % возврата'], errors='coerce')
-                            churn_sorted_return = churn_table.assign(_pct=churn_return_numeric).dropna(subset=['_pct']).sort_values('_pct', ascending=False).drop(columns=['_pct'])
-                            top5_return_data = [['Место', 'Когорта', 'Процент возврата', 'Размер когорты']]
-                            for i, row in enumerate(churn_sorted_return.head(5).itertuples(index=False), 1):
-                                top5_return_data.append([
-                                    str(i), 
-                                    row[0],  # Когорта
-                                    f"{row[3]:.1f}%",  # Накопительный % возврата
-                                    str(int(row[1]))  # Кол-во клиентов когорты
-                                ])
-                            
-                            top5_return_table = Table(top5_return_data, colWidths=[0.8*inch, 2*inch, 1.5*inch, 1.5*inch])
-                            top5_return_table.setStyle(TableStyle([
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2ca02c')),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                                ('FONTNAME', (0, 1), (-1, -1), font_name),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                            ]))
-                            story.append(top5_return_table)
-                            story.append(Spacer(1, 0.2*inch))
-                            
-                            # Когорты с максимальным оттоком (исключаем последнюю когорту с "-")
-                            story.append(Paragraph("Топ-5 когорт с наибольшим оттоком:", heading3_style))
-                            churn_churn_numeric = pd.to_numeric(churn_table['Отток %'], errors='coerce')
-                            churn_sorted_churn = churn_table.assign(_pct=churn_churn_numeric).dropna(subset=['_pct']).sort_values('_pct', ascending=False).drop(columns=['_pct'])
-                            top5_churn_data = [['Место', 'Когорта', 'Отток (%)', 'Отток (кол-во)']]
-                            for i, row in enumerate(churn_sorted_churn.head(5).itertuples(index=False), 1):
-                                top5_churn_data.append([
-                                    str(i),
-                                    row[0],  # Когорта
-                                    f"{float(row[5]):.1f}%",  # Отток %
-                                    str(_churn_int(row[4]))  # Отток кол-во
-                                ])
-                            
-                            top5_churn_table = Table(top5_churn_data, colWidths=[0.8*inch, 2*inch, 1.5*inch, 1.5*inch])
-                            top5_churn_table.setStyle(TableStyle([
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#d62728')),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
-                                ('FONTNAME', (0, 1), (-1, -1), font_name),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                                ('FONTSIZE', (0, 1), (-1, -1), 10),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                            ]))
-                            story.append(top5_churn_table)
-                            story.append(Spacer(1, 0.3*inch))
-                            
-                            # Выводы и рекомендации
-                            story.append(Paragraph("6. ВЫВОДЫ И РЕКОМЕНДАЦИИ", heading_style))
-                            
-                            avg_return = pd.to_numeric(churn_table['Накопительный % возврата'], errors='coerce').mean()
-                            avg_churn = pd.to_numeric(churn_table['Отток %'], errors='coerce').mean()
-                            if pd.isna(avg_return):
-                                avg_return = 0
-                            if pd.isna(avg_churn):
-                                avg_churn = 0
-                            
-                            top5_size = sorted(diagonal_values.items(), key=lambda x: x[1], reverse=True)[:5]
-                            conclusions = [
-                                f"• Средний процент возврата клиентов: {avg_return:.1f}%",
-                                f"• Средний процент оттока: {avg_churn:.1f}%",
-                                f"• Наиболее стабильная когорта (по размеру): {top5_size[0][0]} ({int(top5_size[0][1])} клиентов)",
-                                f"• Когорта с наилучшим возвратом: {churn_sorted_return.iloc[0, 0]} ({churn_sorted_return.iloc[0, 3]:.1f}%)",
-                                f"• Когорта с наибольшим оттоком требует внимания: {churn_sorted_churn.iloc[0, 0]} ({float(churn_sorted_churn.iloc[0, 5]):.1f}%)"
-                            ]
-                            
-                            for conclusion in conclusions:
-                                story.append(Paragraph(conclusion, normal_style))
-                                story.append(Spacer(1, 0.1*inch))
-                            
-                            # Собираем PDF
-                            doc.build(story)
-                            buffer.seek(0)
-                            return buffer.getvalue()
-                        
-                        # Генерируем PDF при нажатии кнопки
-                        pdf_data = create_analysis_pdf()
-                        
-                        with col_pdf_button:
-                            st.download_button(
-                                label="📊 Скачать анализ отчёта в PDF",
-                                data=pdf_data,
-                                file_name=f"анализ_когортный_{info['first_period']}_{info['last_period']}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True,
-                                key="download_analysis_pdf"
-                            )
-                        # Продукт построения когорт — уникальные значения из первого столбца первого документа
-                        df_first = st.session_state.get('df')
-                        if df_first is not None and len(df_first.columns) > 0:
-                            product_col = df_first.columns[0]
-                            unique_products = sorted(df_first[product_col].dropna().astype(str).str.strip().unique())
-                            unique_products = [p for p in unique_products if p]
-                            if unique_products:
-                                products_text = ", ".join(unique_products)
-                                st.markdown(f"""
-                                <p style="font-size: 1.5rem; font-weight: 600; margin-top: 16px;">
-                                    Продукт построения когорт: <span style="color: #0d6efd; font-weight: 700;">{products_text}</span>
-                                </p>
-                                """, unsafe_allow_html=True)
                 else:
                     st.info("⏳ Загрузите файл и дождитесь завершения расчётов для генерации отчётов")
                 
@@ -1584,7 +1204,7 @@ if uploaded_file is not None:
                         gap: 10px !important;
                     }
                     
-                    /* Стили для кнопок Excel и PDF - светлые белые с большим шрифтом */
+                    /* Стили для кнопки скачивания Excel */
                     div[data-testid="stDownloadButton"] button,
                     div[data-testid="stButton"] button {
                         background: #f8f9fa !important;
