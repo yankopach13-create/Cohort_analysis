@@ -104,6 +104,16 @@ def _churn_float(val, default=0.0):
         return default
 
 
+def _format_client_code_for_copy(val):
+    """Форматирует код клиента для копирования: без десятичной части (347520 вместо 347520.0)."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ""
+    try:
+        return str(int(float(val)))
+    except (ValueError, TypeError):
+        return str(val).strip()
+
+
 # Настройка страницы
 st.set_page_config(**PAGE_CONFIG)
 
@@ -1808,7 +1818,7 @@ if uploaded_file is not None:
                                 
                                 if common_clients:
                                     st.write(f"**Найдено: {len(common_clients)}**")
-                                    clients_csv = "\n".join([str(client) for client in common_clients])
+                                    clients_csv = "\n".join([_format_client_code_for_copy(client) for client in common_clients])
                                     create_copy_button(
                                         clients_csv,
                                         f"📋 Копировать ({len(common_clients)})",
@@ -1841,7 +1851,7 @@ if uploaded_file is not None:
                                 
                                 if accumulation_clients:
                                     st.write(f"**Найдено: {len(accumulation_clients)}**")
-                                    clients_csv = "\n".join([str(client) for client in accumulation_clients])
+                                    clients_csv = "\n".join([_format_client_code_for_copy(client) for client in accumulation_clients])
                                     create_copy_button(
                                         clients_csv,
                                         f"📋 Копировать ({len(accumulation_clients)})",
@@ -1874,7 +1884,7 @@ if uploaded_file is not None:
                                 
                                 if accumulation_clients:
                                     st.write(f"**Найдено: {len(accumulation_clients)}**")
-                                    clients_csv = "\n".join([str(client) for client in accumulation_clients])
+                                    clients_csv = "\n".join([_format_client_code_for_copy(client) for client in accumulation_clients])
                                     create_copy_button(
                                         clients_csv,
                                         f"📋 Копировать ({len(accumulation_clients)})",
@@ -1907,7 +1917,7 @@ if uploaded_file is not None:
                                 
                                 if inflow_clients:
                                     st.write(f"**Найдено: {len(inflow_clients)}**")
-                                    clients_csv = "\n".join([str(client) for client in inflow_clients])
+                                    clients_csv = "\n".join([_format_client_code_for_copy(client) for client in inflow_clients])
                                     create_copy_button(
                                         clients_csv,
                                         f"📋 Копировать ({len(inflow_clients)})",
@@ -1933,7 +1943,7 @@ if uploaded_file is not None:
                                 
                                 if churn_clients:
                                     st.write(f"**Найдено: {len(churn_clients)}**")
-                                    clients_csv = "\n".join([str(client) for client in churn_clients])
+                                    clients_csv = "\n".join([_format_client_code_for_copy(client) for client in churn_clients])
                                     create_copy_button(
                                         clients_csv,
                                         f"📋 Копировать ({len(churn_clients)})",
@@ -1950,7 +1960,7 @@ if uploaded_file is not None:
                                     all_churn_clients.update(cohort_churn)
                                 
                                 if all_churn_clients:
-                                    all_clients_csv = "\n".join([str(client) for client in sorted(all_churn_clients)])
+                                    all_clients_csv = "\n".join([_format_client_code_for_copy(client) for client in sorted(all_churn_clients)])
                                     create_copy_button(
                                         all_clients_csv,
                                         f"📋 Копировать коды клиентов оттока всех когорт ({len(all_churn_clients)})",
@@ -2267,7 +2277,7 @@ if uploaded_file is not None:
                                     
                                     # Кнопка копирования кодов клиентов оттока из сети для выбранной когорты
                                     if network_churn_clients_list:
-                                        network_churn_clients_csv = "\n".join([str(client) for client in network_churn_clients_list])
+                                        network_churn_clients_csv = "\n".join([_format_client_code_for_copy(client) for client in network_churn_clients_list])
                                         create_copy_button(
                                             network_churn_clients_csv,
                                             f"📋 Копировать коды клиентов оттока из сети ({len(network_churn_clients_list)})",
