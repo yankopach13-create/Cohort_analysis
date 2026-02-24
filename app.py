@@ -23,7 +23,37 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 # Импорты из новых модулей
 from config import PAGE_CONFIG, TEMPLATE_IMAGE_PATHS, CATEGORIES_TEMPLATE_IMAGE_PATHS
-from utils import parse_period, parse_year_month, create_copy_button, detect_columns, normalize_client_code, normalize_period_for_compare
+from utils import parse_period, parse_year_month, create_copy_button, detect_columns
+try:
+    from utils import normalize_client_code, normalize_period_for_compare
+except ImportError:
+    def normalize_client_code(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return ''
+        s = str(val).strip().replace(' ', '')
+        if not s:
+            return ''
+        try:
+            return str(int(float(s)))
+        except (ValueError, TypeError):
+            return s
+
+    def normalize_period_for_compare(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return ''
+        s = str(val).strip()
+        if not s:
+            return ''
+        parsed = parse_period(s)
+        if parsed == (0, 0, 0):
+            return s
+        year, num, ptype = parsed
+        if ptype == 1:
+            return f"{year}/{num:02d}"
+        if ptype == 0:
+            return f"{year}-{num:02d}"
+        return s
+
 try:
     from utils import get_period_after_label
 except ImportError:
