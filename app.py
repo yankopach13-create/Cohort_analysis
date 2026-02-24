@@ -1346,8 +1346,8 @@ if uploaded_file is not None:
                             if unique_products:
                                 products_text = ", ".join(unique_products)
                                 st.markdown(f"""
-                                <p style="font-size: 1.1rem; font-weight: 600; margin-top: 16px;">
-                                    Продукт построения когорт: {products_text}
+                                <p style="font-size: 1.5rem; font-weight: 600; margin-top: 16px;">
+                                    Продукт построения когорт: <span style="color: #0d6efd; font-weight: 700;">{products_text}</span>
                                 </p>
                                 """, unsafe_allow_html=True)
                 else:
