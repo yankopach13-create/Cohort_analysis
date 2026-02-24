@@ -397,7 +397,7 @@ if uploaded_file is not None:
                                         col_lower = str(col).lower().strip()
                                         if 'группа' in col_lower and group_col_temp is None:
                                             group_col_temp = col
-                                        if (('год' in col_lower and 'месяц' in col_lower) or ('год-месяц' in col_lower)) and year_month_col_temp is None:
+                                        if (('год' in col_lower and ('месяц' in col_lower or 'неделя' in col_lower)) or ('год-месяц' in col_lower) or ('год-неделя' in col_lower)) and year_month_col_temp is None:
                                             year_month_col_temp = col
                                         if 'код' in col_lower and 'клиент' in col_lower and client_code_col_temp is None:
                                             client_code_col_temp = col
@@ -668,10 +668,13 @@ if uploaded_file is not None:
                                             period_unique_clients = {period: set() for period in periods_after_cohort}
                                             category_unique_clients = {category: set() for category in categories}
                                             
-                                            # Если есть столбец "Год-месяц", используем его для фильтрации по периодам
+                                            # Если есть столбец периода (Год-месяц / Год-неделя), фильтруем по периодам
                                             if year_month_col_cat is not None:
+                                                # Нормализация периодов для сравнения (строки), чтобы избежать расхождения типов
+                                                cat_period_str = df_categories[year_month_col_cat].astype(str).str.strip()
                                                 for period in periods_after_cohort:
-                                                    period_data = df_categories[df_categories[year_month_col_cat] == period]
+                                                    period_str = str(period).strip()
+                                                    period_data = df_categories[cat_period_str == period_str]
                                                     
                                                     for category in categories:
                                                         category_period_data = period_data[
@@ -726,9 +729,11 @@ if uploaded_file is not None:
                                             # Вычисляем значение для ячейки пересечения
                                             all_category_clients = set()
                                             if year_month_col_cat is not None:
+                                                periods_after_set = {str(p).strip() for p in periods_after_cohort}
                                                 for category in categories:
                                                     category_data = df_categories[df_categories[group_col] == category]
-                                                    category_data_filtered = category_data[category_data[year_month_col_cat].isin(periods_after_cohort)]
+                                                    period_col_str = category_data[year_month_col_cat].astype(str).str.strip()
+                                                    category_data_filtered = category_data[period_col_str.isin(periods_after_set)]
                                                     category_clients = set(category_data_filtered[client_code_col].dropna().astype(str).unique())
                                                     all_category_clients.update(category_clients)
                                             else:
@@ -1557,9 +1562,9 @@ if uploaded_file is not None:
                     
                     # Подготовка данных в зависимости от выбранного типа
                     if view_type == "Динамика уникальных клиентов когорт":
-                        # Применяем цветовое форматирование
+                        # Применяем цветовое форматирование; нулевые значения скрываем
                         matrix_int = cohort_matrix.astype(int)
-                        display_matrix = apply_matrix_color_gradient(matrix_int.astype(float), horizontal_dynamics=True, hide_before_diagonal=True)
+                        display_matrix = apply_matrix_color_gradient(matrix_int.astype(float), horizontal_dynamics=True, hide_before_diagonal=True, hide_zeros=True)
                         display_matrix = display_matrix.format(precision=0, thousands=',', decimal='.')
                         description_text = "Диагональ показывает количество уникальных клиентов в каждом периоде. Пересечения показывают количество клиентов, которые были активны в обоих периодах."
                         view_key = "cohort"

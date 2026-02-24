@@ -170,8 +170,10 @@ def apply_excel_cohort_formatting(worksheet, df, sorted_periods):
                 if cell.value is not None and not isinstance(cell.value, str):
                     cell.number_format = '0'
             else:
+                # Нулевые значения и пустые: скрываем (пустая ячейка, белый фон)
+                cell.value = ""
                 cell.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-                cell.font = Font(color="000000")
+                cell.font = Font(color="FFFFFF")
                 cell.alignment = Alignment(horizontal="center", vertical="center")
 
 
